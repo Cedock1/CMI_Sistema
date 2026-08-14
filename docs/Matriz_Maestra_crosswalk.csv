@@ -1,0 +1,49 @@
+col,Columna Matriz Maestra,Campo CMI,Tabla,Nota
+0,N.º,—,—,índice de fila (descartable)
+1,Código único,codigo + unidad,tarea,jerárquico GAMLP/SEC/DIR/… → parsear para FK unidad MOF
+2,Gestión,periodo,tarea,año
+3,Mes,periodo_mes,tarea,mes reportado
+4,Unidad/Dirección responsable,responsable_unidad_id,tarea,match contra MOF (163)
+5,Programa técnico,programa,programa,vincular a programa (100)
+6,Proyecto/acción estratégica,proyecto,proyecto,vincular a proyecto (~386)
+7,Objetivo general,objetivo,proyecto,
+8,Objetivo específico,objetivo,actividad,
+9,POA / operación,poa_link,poa_mapeo,marca vínculo con POA
+10,Tipo de registro,tipo,tarea,Actividad/Producto/Problema → define el grano
+11,Clasificación del resultado,estado_reportado,tarea,Resultado concluido/en ejecución/proceso
+12,Prioridad,prioridad_declarada,tarea,Alta/Media/Baja — coexiste con RICE (no lo reemplaza)
+13,Problema o línea base,linea_base_texto,tarea,
+14,Indicador de línea base,indicador,tarea,
+15,Valor línea base,valor_linea_base,tarea,
+16,Unidad de medida,unidad_medida,tarea,
+17,Meta anual,meta_anual,tarea,
+18,Meta mensual,meta_mensual,tarea,
+19,Resultado esperado,resultado_esperado,tarea,
+20,Actividad/acción ejecutada,descripcion,tarea,
+21,Producto generado,producto,tarea,
+22,Resultado cuantitativo,resultado_cuant,tarea,
+23,Resultado cualitativo,resultado_cual,tarea,
+24,Población objetivo,alcance_objetivo,tarea,alimenta RICE Alcance
+25,Población beneficiada,alcance_beneficiada,tarea,alimenta RICE Alcance
+26,% avance físico,avance_fisico,tarea,AVANCE HOJA declarado → rollup por esfuerzo (D06) agrega
+27,Presupuesto vigente (Bs),presupuesto_vigente,tarea,PRESUPUESTO a nivel tarea (D36)
+28,Ejecutado acumulado (Bs),monto,ejecucion,GASTO → tabla ejecucion (histórico)
+29,% ejecución financiera,—,—,derivado (ejecutado/vigente)
+30,Fecha de inicio,fecha_inicio,tarea,
+31,Fecha prevista de conclusión,plazo,tarea,
+32,Fecha real de conclusión,fecha_real,tarea,
+33,Estado,estado,tarea,reusar máquina de estados de drica
+34,Impacto ciudadano,impacto_texto,tarea,alimenta RICE Impacto (cualitativo)
+35,Historia humana asociada,narrativa,tarea,insumo comunicación
+36,Código de evidencia,evidencia_codigo,evidencia,
+37,Fuente/verificador,evidencia_fuente,evidencia,
+38,Enlace o ubicación del respaldo,evidencia_url,evidencia,
+39,Riesgo principal,riesgo,tarea,
+40,Medida de mitigación,mitigacion,tarea,
+41,Próximo hito,proximo_hito,tarea,
+42,Responsable técnico,responsable_tecnico,persona,
+43,Responsable de validación,responsable_validacion,persona,
+44,Validación administrativa/financiera,val_admin_fin,validacion,flujo multi-firma
+45,Validación jurídica,val_juridica,validacion,flujo multi-firma
+46,Validación comunicacional,val_comunicacional,validacion,flujo multi-firma
+47,Observaciones,observaciones,tarea,

@@ -1,0 +1,846 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMI GAMLP — Cómo funciona, paso a paso</title>
+<style>
+  :root{
+    --bg:#FAF8F3; --bg-soft:#F1EFE8; --card:#FFFFFF;
+    --text:#1F1D29; --muted:#5F5C6B; --faint:#918E9C; --border:#E7E2D7;
+    --morado:#534AB7; --morado-soft:#EDECFC; --morado-ink:#3B3490;
+    --teal:#158460; --teal-soft:#E0F4ED;
+    --ambar:#9A6011; --ambar-soft:#F8EBD6;
+    --rojo:#992A2A; --rojo-soft:#FBE8E8;
+    --azul:#1F5FA8; --azul-soft:#E3EEFA;
+    --shadow:0 1px 2px rgba(31,29,41,.04), 0 8px 24px rgba(31,29,41,.05);
+    --font-display:"Bricolage Grotesque",-apple-system,"Segoe UI",system-ui,sans-serif;
+    --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --font-mono:ui-monospace,"SF Mono",Menlo,"Cascadia Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#151320; --bg-soft:#1E1B2B; --card:#211E30;
+      --text:#ECEAF3; --muted:#A7A3B6; --faint:#726E85; --border:#302B41;
+      --morado:#9E96F0; --morado-soft:#272248; --morado-ink:#B7B0F5;
+      --teal:#4FC79E; --teal-soft:#12362B;
+      --ambar:#E0A54A; --ambar-soft:#3A2C13;
+      --rojo:#E8817E; --rojo-soft:#3A1E1E;
+      --azul:#7FB2ED; --azul-soft:#152A42;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#151320; --bg-soft:#1E1B2B; --card:#211E30;
+    --text:#ECEAF3; --muted:#A7A3B6; --faint:#726E85; --border:#302B41;
+    --morado:#9E96F0; --morado-soft:#272248; --morado-ink:#B7B0F5;
+    --teal:#4FC79E; --teal-soft:#12362B; --ambar:#E0A54A; --ambar-soft:#3A2C13;
+    --rojo:#E8817E; --rojo-soft:#3A1E1E; --azul:#7FB2ED; --azul-soft:#152A42;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#FAF8F3; --bg-soft:#F1EFE8; --card:#FFFFFF;
+    --text:#1F1D29; --muted:#5F5C6B; --faint:#918E9C; --border:#E7E2D7;
+    --morado:#534AB7; --morado-soft:#EDECFC; --morado-ink:#3B3490;
+    --teal:#158460; --teal-soft:#E0F4ED; --ambar:#9A6011; --ambar-soft:#F8EBD6;
+    --rojo:#992A2A; --rojo-soft:#FBE8E8; --azul:#1F5FA8; --azul-soft:#E3EEFA;
+    --shadow:0 1px 2px rgba(31,29,41,.04), 0 8px 24px rgba(31,29,41,.05);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--font-body); line-height:1.6; font-size:16px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1000px; margin:0 auto; padding:0 24px}
+  .mono{font-family:var(--font-mono)}
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11.5px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--morado); font-weight:600;
+  }
+  h1,h2,h3{font-family:var(--font-display); font-weight:700; letter-spacing:-.02em; text-wrap:balance; line-height:1.15}
+  a{color:var(--morado)}
+
+  header.hero{padding:70px 0 36px; border-bottom:1px solid var(--border)}
+  .brand{display:flex; align-items:center; gap:12px; margin-bottom:28px}
+  .mark{
+    width:44px; height:44px; border-radius:13px; background:var(--morado); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:700; font-size:15px;
+  }
+  .brand b{font-family:var(--font-display); font-size:20px}
+  .brand span{color:var(--faint); font-family:var(--font-mono); font-size:12px}
+  h1{font-size:clamp(32px,5.4vw,52px); margin:0 0 16px}
+  h1 em{font-style:italic; color:var(--morado)}
+  .lede{font-size:clamp(16.5px,2.2vw,20px); color:var(--muted); max-width:62ch; margin:0}
+
+  section{padding:48px 0; border-bottom:1px solid var(--border)}
+  h2{font-size:clamp(23px,3.2vw,30px); margin:0 0 8px}
+  .section-lede{color:var(--muted); max-width:64ch; margin:0 0 26px; font-size:16px}
+
+  /* ---------- Lienzo de diagrama ---------- */
+  .canvas{
+    background:var(--card); border:1px solid var(--border); border-radius:18px;
+    box-shadow:var(--shadow); padding:26px 22px; overflow-x:auto;
+  }
+  .canvas svg{display:block; margin:0 auto; max-width:100%; height:auto}
+  .leyenda{
+    display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; padding-top:14px;
+    border-top:1px dashed var(--border); font-size:13px; color:var(--muted);
+  }
+  .leyenda span{display:flex; align-items:center; gap:7px}
+  .sw{width:13px; height:13px; border-radius:4px; flex-shrink:0; border:1px solid rgba(0,0,0,.08)}
+
+  /* ---------- Flujo por pasos ---------- */
+  .flow{display:flex; flex-direction:column; gap:0}
+  .frow{display:flex; align-items:stretch; gap:0}
+  .fnum{flex-shrink:0; width:52px; display:flex; flex-direction:column; align-items:center}
+  .fnum b{
+    width:30px; height:30px; border-radius:50%; background:var(--morado); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-mono); font-size:12.5px; font-weight:700; flex-shrink:0;
+  }
+  .fnum i{flex:1; width:2px; background:var(--border); margin:5px 0 0}
+  .frow:last-child .fnum i{display:none}
+  .fbody{flex:1; padding:0 0 26px 6px}
+  .fbody h3{font-size:17px; margin:3px 0 5px}
+  .fbody p{margin:0; color:var(--muted); font-size:14.5px}
+  .actor{
+    display:inline-block; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.06em;
+    text-transform:uppercase; padding:3px 9px; border-radius:100px; margin-bottom:2px;
+  }
+  .a-ia{background:var(--morado-soft); color:var(--morado)}
+  .a-humano{background:var(--teal-soft); color:var(--teal)}
+  .a-sistema{background:var(--azul-soft); color:var(--azul)}
+  .nota{
+    margin-top:9px; padding:10px 13px; background:var(--bg-soft); border-radius:10px;
+    border-left:3px solid var(--morado); font-size:13.5px; color:var(--muted);
+  }
+  .nota b{color:var(--text)}
+
+  /* ---------- Tablas ---------- */
+  .tablewrap{overflow-x:auto; border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow)}
+  table{border-collapse:collapse; width:100%; background:var(--card); font-size:14px; min-width:700px}
+  th,td{text-align:left; padding:11px 13px; border-bottom:1px solid var(--border); vertical-align:middle}
+  th{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; color:var(--faint); font-weight:600}
+  tr:last-child td{border-bottom:none}
+  td.rol{font-family:var(--font-mono); font-size:12.5px; color:var(--morado); white-space:nowrap}
+  .si{color:var(--teal); font-weight:700; text-align:center}
+  .no{color:var(--faint); text-align:center}
+  .parcial{color:var(--ambar); font-weight:700; text-align:center; font-size:12px}
+  .num{font-variant-numeric:tabular-nums; text-align:right}
+
+  .cols{display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:16px; margin-top:20px}
+  .box{background:var(--card); border:1px solid var(--border); border-radius:15px; padding:18px 20px; box-shadow:var(--shadow)}
+  .box h3{font-size:16px; margin:0 0 6px}
+  .box p{margin:0; font-size:14px; color:var(--muted)}
+  .box ul{margin:8px 0 0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:5px}
+  .box li{font-size:13.5px; padding-left:17px; position:relative; line-height:1.45}
+  .box li::before{content:"›"; position:absolute; left:2px; color:var(--morado); font-weight:700}
+
+  footer{padding:38px 0 60px; color:var(--faint); font-size:13px}
+
+  @media print{
+    body{background:#fff}
+    section{page-break-inside:avoid; border-bottom:none; padding:26px 0}
+    .canvas{box-shadow:none; page-break-inside:avoid}
+    header.hero{padding:20px 0}
+    @page{size:A4; margin:14mm}
+  }
+  @media (max-width:560px){
+    header.hero{padding:46px 0 28px}
+    section{padding:36px 0}
+    .canvas{padding:18px 14px}
+  }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark">CMI</div>
+      <div>
+        <b>Cuadro de Mando Integral</b><br>
+        <span>GAMLP · Despacho del Alcalde · Gestión 2026–2031</span>
+      </div>
+    </div>
+    <div class="eyebrow">Diagramas del funcionamiento</div>
+    <h1>Cómo funciona, <em>paso a paso</em>.</h1>
+    <p class="lede">
+      Cada mecanismo del sistema explicado con su recorrido real: quién hace qué, en qué orden, y en qué
+      momento decide una persona. En todos los diagramas, lo <b>morado</b> lo hace la IA, lo
+      <b>verde</b> lo decide una persona y lo <b>azul</b> lo ejecuta el sistema solo.
+    </p>
+  </div>
+</header>
+
+<!-- ══════════════════ 1. RECORRIDO GENERAL ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Diagrama 1</div>
+    <h2>El recorrido completo de un compromiso</h2>
+    <p class="section-lede">
+      De lo que el Alcalde dijo en terreno al avance en el tablero. Este es el camino único: no hay otra
+      puerta de entrada ni otra forma de mover el avance.
+    </p>
+
+    <div class="canvas">
+      <svg viewBox="0 0 940 470" role="img" aria-label="Recorrido completo de un compromiso, de la materia prima al avance en el tablero">
+        <defs>
+          <marker id="fl" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <style>
+          .n{fill:var(--card); stroke:var(--border); stroke-width:1.5}
+          .n-ia{fill:var(--morado-soft); stroke:var(--morado); stroke-width:1.5}
+          .n-hu{fill:var(--teal-soft); stroke:var(--teal); stroke-width:1.5}
+          .n-sy{fill:var(--azul-soft); stroke:var(--azul); stroke-width:1.5}
+          .t{font-family:var(--font-body); font-size:13px; fill:var(--text); font-weight:600}
+          .s{font-family:var(--font-body); font-size:11px; fill:var(--muted)}
+          .lbl{font-family:var(--font-mono); font-size:10px; fill:var(--faint)}
+          .ln{stroke:var(--border); stroke-width:1.8; fill:none; color:var(--faint)}
+        </style>
+
+        <!-- Fila 1: entradas -->
+        <text x="20" y="26" class="lbl">ENTRA LA MATERIA PRIMA</text>
+        <rect x="20" y="36" width="150" height="42" rx="10" class="n"/>
+        <text x="95" y="55" class="t" text-anchor="middle">Inspección</text>
+        <text x="95" y="70" class="s" text-anchor="middle">transcripción del audio</text>
+
+        <rect x="20" y="86" width="150" height="42" rx="10" class="n"/>
+        <text x="95" y="105" class="t" text-anchor="middle">Declaración pública</text>
+        <text x="95" y="120" class="s" text-anchor="middle">conferencia, acto</text>
+
+        <rect x="20" y="136" width="150" height="42" rx="10" class="n"/>
+        <text x="95" y="155" class="t" text-anchor="middle">Gabinete o despacho</text>
+        <text x="95" y="170" class="s" text-anchor="middle">acta, nota, instrucción</text>
+
+        <path d="M 170 57 C 200 57, 200 107, 226 107" class="ln" marker-end="url(#fl)"/>
+        <path d="M 170 107 L 226 107" class="ln" marker-end="url(#fl)"/>
+        <path d="M 170 157 C 200 157, 200 107, 226 107" class="ln" marker-end="url(#fl)"/>
+
+        <!-- IA lee -->
+        <rect x="230" y="76" width="160" height="62" rx="12" class="n-ia"/>
+        <text x="310" y="99" class="t" text-anchor="middle">La IA lee</text>
+        <text x="310" y="115" class="s" text-anchor="middle">contra las reglas duras,</text>
+        <text x="310" y="128" class="s" text-anchor="middle">el MOF y el Plan</text>
+
+        <!-- Cotejo -->
+        <path d="M 390 107 L 436 107" class="ln" marker-end="url(#fl)"/>
+        <rect x="440" y="76" width="160" height="62" rx="12" class="n-ia"/>
+        <text x="520" y="99" class="t" text-anchor="middle">¿Ya está captado?</text>
+        <text x="520" y="115" class="s" text-anchor="middle">coteja contra los 328</text>
+        <text x="520" y="128" class="s" text-anchor="middle">compromisos vigentes</text>
+
+        <!-- rama enriquecer, por arriba -->
+        <path d="M 520 76 C 520 42, 310 42, 310 72" class="ln" marker-end="url(#fl)" stroke-dasharray="4 4"/>
+        <text x="415" y="36" class="lbl" text-anchor="middle">si ya está → enriquece el existente, no crea otro</text>
+
+        <!-- Propuesta -->
+        <path d="M 600 107 L 646 107" class="ln" marker-end="url(#fl)"/>
+        <rect x="650" y="62" width="170" height="90" rx="12" class="n-ia"/>
+        <text x="735" y="84" class="t" text-anchor="middle">Propuesta</text>
+        <text x="735" y="101" class="s" text-anchor="middle">compromiso + subtareas</text>
+        <text x="735" y="115" class="s" text-anchor="middle">unidad · proyecto · eje</text>
+        <text x="735" y="129" class="s" text-anchor="middle">plazo · RICE · cita textual</text>
+        <text x="735" y="143" class="s" text-anchor="middle">lugar</text>
+
+        <!-- Corrección -->
+        <path d="M 735 152 L 735 186" class="ln" marker-end="url(#fl)"/>
+        <rect x="640" y="190" width="190" height="52" rx="12" class="n-hu"/>
+        <text x="735" y="211" class="t" text-anchor="middle">La persona corrige</text>
+        <text x="735" y="228" class="s" text-anchor="middle">nada existe sin este paso</text>
+
+        <!-- Registro -->
+        <path d="M 640 216 L 500 216" class="ln" marker-end="url(#fl)"/>
+        <rect x="320" y="190" width="175" height="52" rx="12" class="n-sy"/>
+        <text x="407" y="211" class="t" text-anchor="middle">Compromiso registrado</text>
+        <text x="407" y="228" class="s" text-anchor="middle">con la fecha del evento</text>
+
+        <!-- Verificaciones automáticas -->
+        <path d="M 320 216 L 194 216" class="ln" marker-end="url(#fl)"/>
+        <rect x="20" y="184" width="170" height="64" rx="12" class="n-sy"/>
+        <text x="105" y="204" class="t" text-anchor="middle">El sistema verifica</text>
+        <text x="105" y="220" class="s" text-anchor="middle">coordenada dentro del</text>
+        <text x="105" y="233" class="s" text-anchor="middle">municipio · origen · agenda</text>
+
+        <path d="M 165 248 L 165 282" class="ln" marker-end="url(#fl)"/>
+
+        <text x="20" y="272" class="lbl">TRABAJO Y MEDICIÓN</text>
+        <rect x="20" y="286" width="170" height="56" rx="12" class="n"/>
+        <text x="105" y="308" class="t" text-anchor="middle">A cada unidad, lo suyo</text>
+        <text x="105" y="325" class="s" text-anchor="middle">responsable y acompañantes</text>
+
+        <path d="M 190 314 L 236 314" class="ln" marker-end="url(#fl)"/>
+        <rect x="240" y="286" width="170" height="56" rx="12" class="n-hu"/>
+        <text x="325" y="303" class="t" text-anchor="middle">Se marca la subtarea</text>
+        <text x="325" y="320" class="s" text-anchor="middle">hecha o no hecha,</text>
+        <text x="325" y="334" class="s" text-anchor="middle">con nota o archivo</text>
+        <text x="325" y="358" class="lbl" text-anchor="middle">sin constancia no se puede marcar</text>
+
+        <path d="M 410 314 L 456 314" class="ln" marker-end="url(#fl)"/>
+        <rect x="460" y="286" width="170" height="56" rx="12" class="n-sy"/>
+        <text x="545" y="303" class="t" text-anchor="middle">Avance de la tarea</text>
+        <text x="545" y="320" class="s" text-anchor="middle">ponderado por esfuerzo,</text>
+        <text x="545" y="334" class="s" text-anchor="middle">no por conteo</text>
+
+        <path d="M 630 314 L 676 314" class="ln" marker-end="url(#fl)"/>
+        <rect x="680" y="286" width="160" height="56" rx="12" class="n-sy"/>
+        <text x="760" y="308" class="t" text-anchor="middle">Sube al proyecto</text>
+        <text x="760" y="325" class="s" text-anchor="middle">y de ahí al eje del Plan</text>
+
+        <path d="M 760 342 L 760 378" class="ln" marker-end="url(#fl)"/>
+        <rect x="655" y="382" width="185" height="52" rx="12" class="n"/>
+        <text x="747" y="403" class="t" text-anchor="middle">Tablero del Despacho</text>
+        <text x="747" y="420" class="s" text-anchor="middle">semáforo, mapa, RICE</text>
+
+        <!-- vuelta: el Alcalde reitera -->
+        <path d="M 655 408 C 470 408, 470 408, 300 408" class="ln" marker-end="url(#fl)" stroke-dasharray="4 4"/>
+        <rect x="20" y="382" width="270" height="52" rx="12" class="n-ia"/>
+        <text x="155" y="403" class="t" text-anchor="middle">El Alcalde vuelve sobre el tema</text>
+        <text x="155" y="420" class="s" text-anchor="middle">nueva cita, mismo compromiso → se enriquece</text>
+      </svg>
+
+      <div class="leyenda">
+        <span><i class="sw" style="background:var(--morado-soft); border-color:var(--morado)"></i> Lo hace la IA</span>
+        <span><i class="sw" style="background:var(--teal-soft); border-color:var(--teal)"></i> Lo decide una persona</span>
+        <span><i class="sw" style="background:var(--azul-soft); border-color:var(--azul)"></i> Lo ejecuta el sistema</span>
+        <span><i class="sw" style="background:var(--card)"></i> Dato o documento</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 2. EL EMBUDO ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Diagrama 2</div>
+    <h2>El embudo de captación, por dentro</h2>
+    <p class="section-lede">
+      Lo que ocurre entre pegar una transcripción de 40 mil caracteres y tener seis compromisos
+      registrados. El paso 5 es el que define el sistema: la IA nunca escribe en la base.
+    </p>
+
+    <div class="flow">
+      <div class="frow"><div class="fnum"><b>1</b><i></i></div><div class="fbody">
+        <span class="actor a-humano">Persona</span>
+        <h3>Se pega la materia prima entera</h3>
+        <p>La transcripción completa, sin resumir. Resumir antes de que la lea la IA es decidir por ella
+          qué es importante, y ahí se pierden compromisos.</p>
+      </div></div>
+
+      <div class="frow"><div class="fnum"><b>2</b><i></i></div><div class="fbody">
+        <span class="actor a-sistema">Sistema</span>
+        <h3>Se carga el contexto</h3>
+        <p>Las reglas duras desde su archivo versionado, los 387 proyectos del Plan, las 163 unidades del
+          MOF, los 10 ejes — y los compromisos ya captados.</p>
+        <div class="nota">Sin el catálogo de lo ya captado, la regla de cotejo sería letra muerta:
+          la IA no puede evitar duplicar lo que no sabe que existe.</div>
+      </div></div>
+
+      <div class="frow"><div class="fnum"><b>3</b><i></i></div><div class="fbody">
+        <span class="actor a-ia">IA</span>
+        <h3>Separa el compromiso del comentario</h3>
+        <p>Distingue lo que el Alcalde <b>instruyó</b> de lo que opinó, saludó o contó como anécdota. Una
+          frase marcada «esto lo digo muy personalmente» no es un compromiso, y así se descarta con motivo.</p>
+      </div></div>
+
+      <div class="frow"><div class="fnum"><b>4</b><i></i></div><div class="fbody">
+        <span class="actor a-ia">IA</span>
+        <h3>Arma cada compromiso completo</h3>
+        <p>Título verificable, descripción con contexto suficiente, la cita textual verbatim, la unidad
+          responsable, los acompañantes con su rol, el proyecto y el eje por materia, el plazo con su
+          origen, el puntaje RICE con su justificación, y las subtareas.</p>
+        <div class="nota">Cada subtarea queda marcada como <b>dictada</b> (el Alcalde la dijo) o
+          <b>sugerida</b> (la dedujo la IA). Hoy hay 283 dictadas y 45 sugeridas: se puede saber siempre
+          qué salió de su boca y qué no.</div>
+      </div></div>
+
+      <div class="frow"><div class="fnum"><b>5</b><i></i></div><div class="fbody">
+        <span class="actor a-humano">Persona</span>
+        <h3>Revisa, corrige y descarta</h3>
+        <p>Compromiso por compromiso. Se puede cambiar el responsable, mover el plazo, corregir el encaje
+          o sacar uno entero de la lista. Recién al confirmar se escribe en la base.</p>
+      </div></div>
+
+      <div class="frow"><div class="fnum"><b>6</b><i></i></div><div class="fbody">
+        <span class="actor a-sistema">Sistema</span>
+        <h3>Escribe y verifica</h3>
+        <p>Crea la tarea con la fecha del <b>evento</b>, sus subtareas, sus acompañantes, su renglón de
+          origen y su entrada en la bitácora. Geocodifica el lugar y comprueba dos veces que la coordenada
+          caiga dentro del municipio; si no pasa, la deja vacía en vez de guardar una ubicación falsa.</p>
+      </div></div>
+
+      <div class="frow"><div class="fnum"><b>7</b><i></i></div><div class="fbody">
+        <span class="actor a-sistema">Sistema</span>
+        <h3>Avisa lo que quedó flojo</h3>
+        <p>Si una unidad figura como ejecutora pero no tiene ninguna subtarea a su nombre, lo señala: es
+          señal de que el trabajo no se repartió. El rol territorial queda fuera de esa señal, porque
+          responde por su jurisdicción sin ejecutar.</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 3. AVANCE ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Diagrama 3</div>
+    <h2>Cómo se calcula el avance</h2>
+    <p class="section-lede">
+      Nadie escribe un porcentaje. El número sube desde la única cosa que se puede verificar —una
+      subtarea hecha, con constancia— y se agrega hacia arriba ponderando por esfuerzo.
+    </p>
+
+    <div class="canvas">
+      <svg viewBox="0 0 900 340" role="img" aria-label="Cálculo del avance desde la subtarea hasta el eje del Plan">
+        <defs>
+          <marker id="f2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <style>
+          .n2{fill:var(--card); stroke:var(--border); stroke-width:1.5}
+          .n2-hu{fill:var(--teal-soft); stroke:var(--teal); stroke-width:1.5}
+          .n2-sy{fill:var(--azul-soft); stroke:var(--azul); stroke-width:1.5}
+          .n2-x{fill:var(--ambar-soft); stroke:var(--ambar); stroke-width:1.5}
+          .t2{font-family:var(--font-body); font-size:13px; fill:var(--text); font-weight:600}
+          .s2{font-family:var(--font-body); font-size:11px; fill:var(--muted)}
+          .l2{font-family:var(--font-mono); font-size:10px; fill:var(--faint)}
+          .ln2{stroke:var(--border); stroke-width:1.8; fill:none; color:var(--faint)}
+        </style>
+
+        <text x="20" y="24" class="l2">LO ÚNICO QUE SE MARCA A MANO</text>
+
+        <!-- subtareas -->
+        <rect x="20" y="36" width="176" height="40" rx="10" class="n2-hu"/>
+        <text x="108" y="53" class="t2" text-anchor="middle">Subtarea A · hecha</text>
+        <text x="108" y="68" class="s2" text-anchor="middle">con nota o archivo · esfuerzo 3</text>
+
+        <rect x="20" y="84" width="176" height="40" rx="10" class="n2"/>
+        <text x="108" y="101" class="t2" text-anchor="middle">Subtarea B · pendiente</text>
+        <text x="108" y="116" class="s2" text-anchor="middle">esfuerzo 8</text>
+
+        <rect x="20" y="132" width="176" height="40" rx="10" class="n2-hu"/>
+        <text x="108" y="149" class="t2" text-anchor="middle">Subtarea C · hecha</text>
+        <text x="108" y="164" class="s2" text-anchor="middle">con nota o archivo · esfuerzo 5</text>
+
+        <path d="M 196 56 C 226 56, 226 104, 252 104" class="ln2" marker-end="url(#f2)"/>
+        <path d="M 196 104 L 252 104" class="ln2" marker-end="url(#f2)"/>
+        <path d="M 196 152 C 226 152, 226 104, 252 104" class="ln2" marker-end="url(#f2)"/>
+
+        <!-- tarea -->
+        <rect x="256" y="72" width="180" height="64" rx="12" class="n2-sy"/>
+        <text x="346" y="94" class="t2" text-anchor="middle">Avance de la tarea</text>
+        <text x="346" y="111" class="s2" text-anchor="middle">(3 + 5) ÷ (3 + 8 + 5) = 50 %</text>
+        <text x="346" y="126" class="s2" text-anchor="middle">ponderado por esfuerzo</text>
+        <text x="346" y="154" class="l2" text-anchor="middle">no es «2 de 3 = 67 %»: la pesada cuenta más</text>
+
+        <path d="M 436 104 L 482 104" class="ln2" marker-end="url(#f2)"/>
+
+        <rect x="486" y="72" width="170" height="64" rx="12" class="n2-sy"/>
+        <text x="571" y="94" class="t2" text-anchor="middle">Actividad y proyecto</text>
+        <text x="571" y="111" class="s2" text-anchor="middle">promedio de sus tareas</text>
+        <text x="571" y="126" class="s2" text-anchor="middle">contra la meta del proyecto</text>
+
+        <path d="M 656 104 L 702 104" class="ln2" marker-end="url(#f2)"/>
+
+        <rect x="706" y="72" width="174" height="64" rx="12" class="n2-sy"/>
+        <text x="793" y="94" class="t2" text-anchor="middle">Programa y eje</text>
+        <text x="793" y="111" class="s2" text-anchor="middle">los 10 ejes del Plan</text>
+        <text x="793" y="126" class="s2" text-anchor="middle">2026 – 2031</text>
+
+        <!-- La regla del nulo -->
+        <text x="20" y="212" class="l2">LA DISTINCIÓN QUE EVITA MENTIR</text>
+        <rect x="20" y="224" width="270" height="66" rx="12" class="n2-x"/>
+        <text x="155" y="247" class="t2" text-anchor="middle">Nadie reportó</text>
+        <text x="155" y="264" class="s2" text-anchor="middle">el avance queda en NULO,</text>
+        <text x="155" y="278" class="s2" text-anchor="middle">no en cero</text>
+
+        <rect x="310" y="224" width="270" height="66" rx="12" class="n2"/>
+        <text x="445" y="247" class="t2" text-anchor="middle">Se reportó y no avanzó</text>
+        <text x="445" y="264" class="s2" text-anchor="middle">el avance es CERO,</text>
+        <text x="445" y="278" class="s2" text-anchor="middle">y eso es información</text>
+
+        <rect x="600" y="224" width="280" height="66" rx="12" class="n2"/>
+        <text x="740" y="244" class="t2" text-anchor="middle">Por qué importa</text>
+        <text x="740" y="261" class="s2" text-anchor="middle">un tablero que muestra 0 % donde nadie</text>
+        <text x="740" y="275" class="s2" text-anchor="middle">informó acusa a quien quizá sí trabajó</text>
+
+        <text x="20" y="318" class="l2">Hoy: 115 de 328 compromisos tienen avance reportado · las otras 213 están en nulo, no en cero.</text>
+      </svg>
+
+      <div class="leyenda">
+        <span><i class="sw" style="background:var(--teal-soft); border-color:var(--teal)"></i> Lo marca una persona</span>
+        <span><i class="sw" style="background:var(--azul-soft); border-color:var(--azul)"></i> Lo calcula el sistema</span>
+        <span><i class="sw" style="background:var(--ambar-soft); border-color:var(--ambar)"></i> Ausencia de dato</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 4. EJE POR MATERIA ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Diagrama 4</div>
+    <h2>A qué eje pertenece cada compromiso</h2>
+    <p class="section-lede">
+      La regla es una sola y no es obvia: <b>el eje describe de qué trata el compromiso, no quién lo
+      ejecuta</b>. Si se asignara por unidad, cada secretaría se atribuiría todo lo que toca y el Plan
+      dejaría de medir materias para medir organigrama.
+    </p>
+
+    <div class="canvas">
+      <svg viewBox="0 0 900 300" role="img" aria-label="El eje se asigna por materia y no por la unidad que ejecuta">
+        <defs>
+          <marker id="f3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <style>
+          .n3{fill:var(--card); stroke:var(--border); stroke-width:1.5}
+          .n3-ok{fill:var(--teal-soft); stroke:var(--teal); stroke-width:1.5}
+          .n3-no{fill:var(--rojo-soft); stroke:var(--rojo); stroke-width:1.5}
+          .n3-ia{fill:var(--morado-soft); stroke:var(--morado); stroke-width:1.5}
+          .t3{font-family:var(--font-body); font-size:13px; fill:var(--text); font-weight:600}
+          .s3{font-family:var(--font-body); font-size:11px; fill:var(--muted)}
+          .l3{font-family:var(--font-mono); font-size:10px; fill:var(--faint)}
+          .ln3{stroke:var(--border); stroke-width:1.8; fill:none; color:var(--faint)}
+        </style>
+
+        <text x="20" y="24" class="l3">EL CASO REAL</text>
+        <rect x="20" y="36" width="300" height="60" rx="12" class="n3"/>
+        <text x="170" y="59" class="t3" text-anchor="middle">«Resolver la iluminación del Mercado</text>
+        <text x="170" y="76" class="t3" text-anchor="middle">Rodríguez con paneles solares»</text>
+        <text x="170" y="90" class="s3" text-anchor="middle">lo ejecuta la Unidad de Servicios Eléctricos</text>
+
+        <path d="M 320 66 L 372 66" class="ln3" marker-end="url(#f3)"/>
+
+        <rect x="376" y="34" width="200" height="64" rx="12" class="n3-ia"/>
+        <text x="476" y="56" class="t3" text-anchor="middle">¿De qué trata?</text>
+        <text x="476" y="73" class="s3" text-anchor="middle">no ¿quién lo hace?</text>
+        <text x="476" y="88" class="s3" text-anchor="middle">ni ¿para qué sirve?</text>
+
+        <path d="M 576 52 C 606 52, 606 34, 632 34" class="ln3" marker-end="url(#f3)"/>
+        <path d="M 576 82 C 606 82, 606 128, 632 128" class="ln3" marker-end="url(#f3)"/>
+
+        <rect x="636" y="10" width="244" height="48" rx="11" class="n3-ok"/>
+        <text x="758" y="30" class="t3" text-anchor="middle">Eje 9 · generación solar</text>
+        <text x="758" y="46" class="s3" text-anchor="middle">la materia es energía en cubierta ✓</text>
+
+        <rect x="636" y="104" width="244" height="48" rx="11" class="n3-no"/>
+        <text x="758" y="124" class="t3" text-anchor="middle">Eje 4 · mercados</text>
+        <text x="758" y="140" class="s3" text-anchor="middle">es el programa que lo motiva, no la materia</text>
+
+        <text x="20" y="186" class="l3">LAS DOS CLASIFICACIONES CONVIVEN, Y NO SE MEZCLAN</text>
+
+        <rect x="20" y="200" width="416" height="76" rx="12" class="n3-ok"/>
+        <text x="228" y="222" class="t3" text-anchor="middle">Eje por MATERIA — el oficial</text>
+        <text x="228" y="240" class="s3" text-anchor="middle">es el que atribuye: dice a qué eje del Plan aporta</text>
+        <text x="228" y="255" class="s3" text-anchor="middle">este compromiso. Es el que se muestra y el que</text>
+        <text x="228" y="269" class="s3" text-anchor="middle">se reporta.</text>
+
+        <rect x="464" y="200" width="416" height="76" rx="12" class="n3"/>
+        <text x="672" y="222" class="t3" text-anchor="middle">Eje jerárquico — solo para sumar</text>
+        <text x="672" y="240" class="s3" text-anchor="middle">el eje del proyecto del que cuelga. Sirve para</text>
+        <text x="672" y="255" class="s3" text-anchor="middle">agregar el avance hacia arriba, pero NO atribuye</text>
+        <text x="672" y="269" class="s3" text-anchor="middle">el logro a ese eje.</text>
+      </svg>
+
+      <div class="leyenda">
+        <span><i class="sw" style="background:var(--teal-soft); border-color:var(--teal)"></i> Lo correcto</span>
+        <span><i class="sw" style="background:var(--rojo-soft); border-color:var(--rojo)"></i> El error frecuente</span>
+        <span><i class="sw" style="background:var(--morado-soft); border-color:var(--morado)"></i> La pregunta que lo decide</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 5. MULTI-SECRETARÍA ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Diagrama 5</div>
+    <h2>Cuando el compromiso es de más de una unidad</h2>
+    <p class="section-lede">
+      Casi ninguno es de una sola. El sistema distingue cuatro formas de estar involucrado, y la
+      diferencia no es de cortesía: define quién debe tener trabajo a su nombre y a quién se le puede
+      exigir el resultado.
+    </p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Rol</th><th>Por qué figura</th>
+            <th style="text-align:center">Responde por<br>el resultado</th>
+            <th style="text-align:center">Debe tener<br>subtarea</th>
+            <th class="num">Hoy</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="rol">Responsable</td>
+            <td>Es la unidad que responde por que el compromiso se cumpla.</td>
+            <td class="si">✓</td><td class="si">✓</td><td class="num">328</td>
+          </tr>
+          <tr>
+            <td class="rol">Concurrente</td>
+            <td>Ejecuta una parte sustantiva sin la cual el compromiso no se cierra.</td>
+            <td class="parcial">de su parte</td><td class="si">✓</td><td class="num">74</td>
+          </tr>
+          <tr>
+            <td class="rol">Apoyo</td>
+            <td>Aporta un insumo puntual: un informe, un permiso, un equipo.</td>
+            <td class="no">—</td><td class="si">✓</td><td class="num">49</td>
+          </tr>
+          <tr>
+            <td class="rol">Territorial</td>
+            <td>La subalcaldía en cuya jurisdicción ocurre. Figura aunque no ejecute nada.</td>
+            <td class="no">—</td><td class="no">no</td><td class="num">15</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="cols">
+      <div class="box">
+        <h3>La señal que produce esta tabla</h3>
+        <p>Si una unidad figura como concurrente o apoyo, es porque <b>hace</b> algo. Un ejecutor con cero
+          subtareas a su nombre significa que el trabajo no se repartió, y el sistema lo marca.</p>
+        <ul>
+          <li>Hoy señala 92 casos heredados: trabajo sin repartir, para revisar</li>
+          <li>No es un error de datos — es una alerta de gestión</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>Por qué el territorial queda fuera de la señal</h3>
+        <p>La subalcaldía responde por su territorio aunque la obra la ejecute otra secretaría. Exigirle una
+          subtarea sería inventar trabajo solo para acallar una alerta.</p>
+        <ul>
+          <li>Se consulta aparte, en la vista de territorio</li>
+          <li>Una señal que marca casos correctos deja de leerse</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h3>Cuando el proyecto es muy grande</h3>
+        <p>Puede haber más de dos unidades involucradas, y el sistema no las limita. Lo que no admite es
+          más de un <b>responsable</b>: si responden todos, no responde nadie.</p>
+        <ul>
+          <li>Un responsable, tantos concurrentes como haga falta</li>
+          <li>Cada uno con su parte del trabajo explícita</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 6. TRAZABILIDAD ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Diagrama 6</div>
+    <h2>De dónde viene cada compromiso</h2>
+    <p class="section-lede">
+      La pregunta que hay que poder responder dentro de un año es «¿de dónde salió esto?», y también la
+      inversa: «¿qué compromisos generó la inspección del 7 de agosto?». El sistema responde las dos.
+    </p>
+
+    <div class="canvas">
+      <svg viewBox="0 0 900 330" role="img" aria-label="Trazabilidad bidireccional entre eventos y compromisos">
+        <defs>
+          <marker id="f4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <style>
+          .n4{fill:var(--card); stroke:var(--border); stroke-width:1.5}
+          .n4-ev{fill:var(--ambar-soft); stroke:var(--ambar); stroke-width:1.5}
+          .n4-ta{fill:var(--morado-soft); stroke:var(--morado); stroke-width:1.5}
+          .t4{font-family:var(--font-body); font-size:12.5px; fill:var(--text); font-weight:600}
+          .s4{font-family:var(--font-body); font-size:11px; fill:var(--muted)}
+          .l4{font-family:var(--font-mono); font-size:10px; fill:var(--faint)}
+          .ln4{stroke:var(--border); stroke-width:1.8; fill:none; color:var(--faint)}
+        </style>
+
+        <text x="20" y="24" class="l4">LOS EVENTOS CAPTADOS</text>
+        <rect x="20" y="36" width="200" height="42" rx="10" class="n4-ev"/>
+        <text x="120" y="54" class="t4" text-anchor="middle">Gallardo · 04-ago</text>
+        <text x="120" y="69" class="s4" text-anchor="middle">7 nuevas · 1 enriquecida</text>
+
+        <rect x="20" y="86" width="200" height="42" rx="10" class="n4-ev"/>
+        <text x="120" y="104" class="t4" text-anchor="middle">Cota Cota · 07-ago</text>
+        <text x="120" y="119" class="s4" text-anchor="middle">3 nuevas · 4 enriquecidas</text>
+
+        <rect x="20" y="136" width="200" height="42" rx="10" class="n4-ev"/>
+        <text x="120" y="154" class="t4" text-anchor="middle">Mercado Rodríguez · 09-ago</text>
+        <text x="120" y="169" class="s4" text-anchor="middle">3 nuevas · 3 enriquecidas</text>
+
+        <path d="M 220 57 C 268 57, 268 92, 316 92" class="ln4" marker-end="url(#f4)"/>
+        <path d="M 220 107 L 316 109" class="ln4" marker-end="url(#f4)"/>
+        <path d="M 220 157 C 268 157, 268 126, 316 126" class="ln4" marker-end="url(#f4)"/>
+
+        <rect x="320" y="76" width="212" height="66" rx="12" class="n4-ta"/>
+        <text x="426" y="98" class="t4" text-anchor="middle">C314 · la red digital de salud</text>
+        <text x="426" y="115" class="s4" text-anchor="middle">un renglón por cada vez que un</text>
+        <text x="426" y="129" class="s4" text-anchor="middle">evento la tocó — nunca se pisan</text>
+
+        <text x="426" y="164" class="l4" text-anchor="middle">«volvió sobre esto» · 3 eventos</text>
+
+        <path d="M 532 109 L 578 109" class="ln4" marker-end="url(#f4)"/>
+        <rect x="582" y="60" width="298" height="98" rx="12" class="n4"/>
+        <text x="731" y="82" class="t4" text-anchor="middle">Cada renglón guarda</text>
+        <text x="731" y="100" class="s4" text-anchor="middle">la fecha del EVENTO, no la de carga</text>
+        <text x="731" y="115" class="s4" text-anchor="middle">el archivo de transcripción del que salió</text>
+        <text x="731" y="130" class="s4" text-anchor="middle">la cita que ESE evento aportó, por separado</text>
+        <text x="731" y="145" class="s4" text-anchor="middle">quién lo cargó y cuándo</text>
+
+        <text x="20" y="212" class="l4">SE RESPONDE EN LAS DOS DIRECCIONES</text>
+
+        <rect x="20" y="224" width="416" height="62" rx="12" class="n4"/>
+        <text x="228" y="246" class="t4" text-anchor="middle">Desde el compromiso →</text>
+        <text x="228" y="263" class="s4" text-anchor="middle">de qué eventos viene, en orden, con su cita</text>
+        <text x="228" y="277" class="s4" text-anchor="middle">y el archivo de cada uno</text>
+
+        <rect x="464" y="224" width="416" height="62" rx="12" class="n4"/>
+        <text x="672" y="246" class="t4" text-anchor="middle">Desde el evento →</text>
+        <text x="672" y="263" class="s4" text-anchor="middle">qué compromisos generó y cuáles solo tocó,</text>
+        <text x="672" y="277" class="s4" text-anchor="middle">sin leer justificaciones a mano</text>
+
+        <text x="20" y="318" class="l4">10 compromisos ya vienen de más de un evento: eso no es repetición, es en qué insiste el Alcalde.</text>
+      </svg>
+
+      <div class="leyenda">
+        <span><i class="sw" style="background:var(--ambar-soft); border-color:var(--ambar)"></i> Evento captado</span>
+        <span><i class="sw" style="background:var(--morado-soft); border-color:var(--morado)"></i> Compromiso</span>
+        <span><i class="sw" style="background:var(--card)"></i> Lo que queda registrado</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════ 7. ARQUITECTURA ══════════════════ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Diagrama 7</div>
+    <h2>Cómo está armado por dentro</h2>
+    <p class="section-lede">
+      Tres capas y una regla que las ordena: <b>el navegador nunca habla con la base</b>. Todo pasa por
+      el servidor, que es donde viven los permisos y la única llave con poder de escritura.
+    </p>
+
+    <div class="canvas">
+      <svg viewBox="0 0 900 320" role="img" aria-label="Arquitectura del sistema: navegador, servidor, base de datos e IA">
+        <defs>
+          <marker id="f5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
+          </marker>
+        </defs>
+        <style>
+          .n5{fill:var(--card); stroke:var(--border); stroke-width:1.5}
+          .n5-sy{fill:var(--azul-soft); stroke:var(--azul); stroke-width:1.5}
+          .n5-ia{fill:var(--morado-soft); stroke:var(--morado); stroke-width:1.5}
+          .n5-db{fill:var(--teal-soft); stroke:var(--teal); stroke-width:1.5}
+          .cap{fill:none; stroke:var(--border); stroke-width:1.3; stroke-dasharray:5 5}
+          .t5{font-family:var(--font-body); font-size:12.5px; fill:var(--text); font-weight:600}
+          .s5{font-family:var(--font-body); font-size:11px; fill:var(--muted)}
+          .l5{font-family:var(--font-mono); font-size:10px; fill:var(--faint)}
+          .ln5{stroke:var(--border); stroke-width:1.8; fill:none; color:var(--faint)}
+        </style>
+
+        <!-- capa navegador -->
+        <rect x="14" y="26" width="872" height="76" rx="14" class="cap"/>
+        <text x="26" y="20" class="l5">NAVEGADOR — solo dibuja</text>
+        <rect x="30" y="42" width="150" height="46" rx="10" class="n5"/>
+        <text x="105" y="61" class="t5" text-anchor="middle">Tablero</text>
+        <text x="105" y="76" class="s5" text-anchor="middle">semáforo, mapa, RICE</text>
+
+        <rect x="196" y="42" width="150" height="46" rx="10" class="n5"/>
+        <text x="271" y="61" class="t5" text-anchor="middle">Embudo</text>
+        <text x="271" y="76" class="s5" text-anchor="middle">captar y corregir</text>
+
+        <rect x="362" y="42" width="170" height="46" rx="10" class="n5"/>
+        <text x="447" y="61" class="t5" text-anchor="middle">Transcripciones</text>
+        <text x="447" y="76" class="s5" text-anchor="middle">qué falta procesar</text>
+
+        <rect x="548" y="42" width="150" height="46" rx="10" class="n5"/>
+        <text x="623" y="61" class="t5" text-anchor="middle">Detalle</text>
+        <text x="623" y="76" class="s5" text-anchor="middle">cita, origen, subtareas</text>
+
+        <rect x="714" y="42" width="156" height="46" rx="10" class="n5"/>
+        <text x="792" y="61" class="t5" text-anchor="middle">Generar tareas</text>
+        <text x="792" y="76" class="s5" text-anchor="middle">armado de proyectos</text>
+
+        <path d="M 450 102 L 450 134" class="ln5" marker-end="url(#f5)"/>
+        <text x="462" y="122" class="l5">toda lectura y escritura</text>
+
+        <!-- capa servidor -->
+        <rect x="14" y="138" width="872" height="80" rx="14" class="cap"/>
+        <text x="26" y="132" class="l5">SERVIDOR — los permisos</text>
+        <rect x="30" y="154" width="240" height="50" rx="11" class="n5-sy"/>
+        <text x="150" y="174" class="t5" text-anchor="middle">Rutas de API</text>
+        <text x="150" y="190" class="s5" text-anchor="middle">la única llave con poder de escritura</text>
+
+        <rect x="286" y="154" width="230" height="50" rx="11" class="n5-sy"/>
+        <text x="401" y="174" class="t5" text-anchor="middle">Reglas versionadas</text>
+        <text x="401" y="190" class="s5" text-anchor="middle">se citan, no se repiten en el prompt</text>
+
+        <rect x="532" y="154" width="160" height="50" rx="11" class="n5-sy"/>
+        <text x="612" y="174" class="t5" text-anchor="middle">Geocodificación</text>
+        <text x="612" y="190" class="s5" text-anchor="middle">con doble verificación</text>
+
+        <rect x="708" y="154" width="162" height="50" rx="11" class="n5-ia"/>
+        <text x="789" y="174" class="t5" text-anchor="middle">API de Claude</text>
+        <text x="789" y="190" class="s5" text-anchor="middle">propone; nunca escribe</text>
+
+        <path d="M 255 218 L 255 250" class="ln5" marker-end="url(#f5)"/>
+        <path d="M 612 218 C 612 236, 500 236, 500 250" class="ln5" marker-end="url(#f5)"/>
+
+        <!-- capa datos -->
+        <rect x="14" y="254" width="872" height="56" rx="14" class="cap"/>
+        <text x="26" y="248" class="l5">BASE DE DATOS — Postgres</text>
+        <rect x="30" y="264" width="180" height="38" rx="10" class="n5-db"/>
+        <text x="120" y="288" class="t5" text-anchor="middle">Compromisos y subtareas</text>
+
+        <rect x="222" y="264" width="150" height="38" rx="10" class="n5-db"/>
+        <text x="297" y="288" class="t5" text-anchor="middle">Plan, MOF y agenda</text>
+
+        <rect x="384" y="264" width="230" height="38" rx="10" class="n5-db"/>
+        <text x="499" y="288" class="t5" text-anchor="middle">Origen y bitácora · append-only</text>
+
+        <rect x="626" y="264" width="244" height="38" rx="10" class="n5-db"/>
+        <text x="748" y="288" class="t5" text-anchor="middle">16 vistas de avance y señales</text>
+      </svg>
+
+      <div class="leyenda">
+        <span><i class="sw" style="background:var(--azul-soft); border-color:var(--azul)"></i> Lógica del sistema</span>
+        <span><i class="sw" style="background:var(--morado-soft); border-color:var(--morado)"></i> IA</span>
+        <span><i class="sw" style="background:var(--teal-soft); border-color:var(--teal)"></i> Datos</span>
+        <span><i class="sw" style="background:var(--card)"></i> Pantalla</span>
+      </div>
+    </div>
+
+    <div class="cols">
+      <div class="box">
+        <h3>Por qué el navegador no toca la base</h3>
+        <p>Porque los permisos se aplican en un solo lugar. Si la pantalla pudiera consultar directamente,
+          habría que replicar las reglas de acceso en cada componente — y bastaría olvidarse en uno.</p>
+      </div>
+      <div class="box">
+        <h3>Por qué hay un esquema de pruebas</h3>
+        <p>Probar una escritura obligaba a crear datos reales, pedir permiso y limpiarlos a mano. La copia
+          se levanta <b>desde las migraciones</b>, no clonando la base: así detecta cuando la base real y
+          las migraciones se separaron.</p>
+      </div>
+      <div class="box">
+        <h3>Por qué nada se borra</h3>
+        <p>La bitácora y la tabla de orígenes solo agregan. Un sistema que produce evidencia de gestión no
+          puede permitir que un renglón incómodo desaparezca sin dejar rastro de que existió.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="mono">GAMLP · Despacho del Alcalde · Gobierno Autónomo Municipal de La Paz</div>
+    <div style="margin-top:6px">Cuadro de Mando Integral (CMI) — diagramas del funcionamiento · Agosto 2026</div>
+    <div style="margin-top:4px">Cifras verificadas contra la base el 10 de agosto de 2026</div>
+  </div>
+</footer>

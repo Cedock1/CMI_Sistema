@@ -1,0 +1,502 @@
+<title>CMI GAMLP — Cómo funciona por dentro</title>
+<style>
+  .viz{
+    color-scheme: light;
+    --surface:#ffffff; --plano:#f4f6f6;
+    --ink:#12191c; --ink-2:#4a5a60; --ink-3:#78888e;
+    --linea:#dde5e7; --linea-2:#eef2f3;
+    --acento:#0f6e6e; --acento-suave:#0f6e6e14;
+    --verde:#0ca30c; --ambar:#fab219; --rojo:#d03b3b; --gris:#9aa7ad;
+    --falta:#e5ebec;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])) .viz{
+      color-scheme: dark;
+      --surface:#161e22; --plano:#0e1417;
+      --ink:#eef4f5; --ink-2:#a8b8be; --ink-3:#7d8d93;
+      --linea:#26333a; --linea-2:#1d272c;
+      --acento:#4ec9bb; --acento-suave:#4ec9bb1f;
+      --verde:#22b455; --ambar:#e0a53a; --rojo:#e46374; --gris:#7f8d94;
+      --falta:#223037;
+    }
+  }
+  :root[data-theme="dark"] .viz{
+    color-scheme: dark;
+    --surface:#161e22; --plano:#0e1417;
+    --ink:#eef4f5; --ink-2:#a8b8be; --ink-3:#7d8d93;
+    --linea:#26333a; --linea-2:#1d272c;
+    --acento:#4ec9bb; --acento-suave:#4ec9bb1f;
+    --verde:#22b455; --ambar:#e0a53a; --rojo:#e46374; --gris:#7f8d94;
+    --falta:#223037;
+  }
+
+  *{box-sizing:border-box}
+  .viz{background:var(--plano);color:var(--ink);margin:0;padding:0 0 60px;line-height:1.55;
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .wrap{max-width:920px;margin:0 auto;padding:0 clamp(16px,4vw,28px)}
+  .head{padding:52px 0 32px;border-bottom:1px solid var(--linea)}
+  .kicker{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--acento);
+    font-weight:700;margin:0 0 12px}
+  .head h1{font-size:clamp(26px,4.2vw,38px);line-height:1.15;margin:0 0 14px;letter-spacing:-.01em}
+  .head .sub{font-size:15.5px;color:var(--ink-2);margin:0;max-width:64ch}
+  section{padding:44px 0;border-bottom:1px solid var(--linea)}
+  section:last-of-type{border-bottom:0}
+  h2{font-size:21px;margin:0 0 6px;letter-spacing:-.01em}
+  .lead{font-size:14.5px;color:var(--ink-2);margin:0 0 24px;max-width:68ch}
+
+  figure{margin:0 0 8px;background:var(--surface);border:1px solid var(--linea);
+    border-radius:12px;padding:20px 18px;overflow-x:auto}
+  figure svg{max-width:100%;height:auto;display:block;margin:0 auto}
+  figcaption{font-size:12.5px;color:var(--ink-3);margin-top:14px;text-align:center;line-height:1.6}
+
+  /* Estilos que el SVG hereda: currentColor sigue el tema en ambos modos */
+  .dg{color:var(--ink-2)}
+  .dg-caja{fill:var(--surface);stroke:currentColor;stroke-width:1.2;opacity:.9}
+  .dg-caja-hi{fill:var(--acento-suave);stroke:var(--acento);stroke-width:1.6}
+  .dg-caja-falta{fill:none;stroke:var(--ambar);stroke-width:1.4;stroke-dasharray:5 4}
+  .dg-t{fill:var(--ink);font-size:12.5px;font-family:inherit}
+  .dg-t-sm{fill:var(--ink-3);font-size:10.5px;font-family:inherit}
+  .dg-t-hi{fill:var(--acento);font-size:12.5px;font-weight:700;font-family:inherit}
+  .dg-t-num{fill:var(--ink);font-size:14px;font-weight:700;font-family:inherit;
+    font-variant-numeric:tabular-nums}
+  .dg-l{stroke:currentColor;stroke-width:1.3;fill:none;opacity:.75}
+  .dg-l-hi{stroke:var(--acento);stroke-width:2;fill:none}
+  .dg-l-falta{stroke:var(--ambar);stroke-width:1.4;fill:none;stroke-dasharray:5 4}
+  .dg-et{fill:var(--ink-3);font-size:10.5px;font-family:inherit}
+
+  .nota{font-size:13px;color:var(--ink-2);margin:16px 0 0;max-width:68ch}
+  .nota b{color:var(--ink)}
+  .regla{background:var(--surface);border:1px solid var(--linea);border-left:3px solid var(--acento);
+    border-radius:8px;padding:14px 17px;margin-top:18px}
+  .regla p{margin:0;font-size:13.5px;color:var(--ink-2)}
+  .regla p.t{font-weight:600;color:var(--ink);font-size:14px;margin-bottom:4px}
+  .pie{padding:32px 0 0;font-size:12px;color:var(--ink-3);line-height:1.7}
+</style>
+
+<div class="viz">
+<div class="wrap">
+
+  <header class="head">
+    <p class="kicker">Gobierno Autónomo Municipal de La Paz · Despacho</p>
+    <h1>Cómo funciona por dentro</h1>
+    <p class="sub">De dónde sale cada dato, cómo se calcula el avance y la prioridad, y qué decide
+      el sistema por sí solo. Cinco mecanismos, cinco diagramas.</p>
+  </header>
+
+  <!-- ══════════ 1 ══════════ -->
+  <section>
+    <h2>1 · De dónde entra la información</h2>
+    <p class="lead">El sistema no se llena a mano. Cada dato tiene una puerta de entrada, y hoy
+      dos de esas puertas todavía no están abiertas.</p>
+
+    <figure>
+      <svg viewBox="0 0 800 330" role="img" class="dg"
+           aria-label="Cuatro fuentes alimentan la base de datos: Notion con 300 compromisos ya migrado, el organigrama municipal ya migrado, la IA que propone tareas activa, las inspecciones del Alcalde pendientes y el POA pendiente. De la base sale el tablero.">
+        <defs>
+          <marker id="f1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="f1a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="var(--ambar)"/>
+          </marker>
+          <marker id="f1h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="var(--acento)"/>
+          </marker>
+        </defs>
+
+        <text x="20" y="22" class="dg-t-sm">ENTRA</text>
+        <text x="330" y="22" class="dg-t-sm">SE GUARDA</text>
+        <text x="640" y="22" class="dg-t-sm">SE VE</text>
+
+        <!-- Fuentes activas -->
+        <rect x="20" y="38" width="185" height="46" rx="8" class="dg-caja"/>
+        <text x="34" y="59" class="dg-t">Notion (sistema anterior)</text>
+        <text x="34" y="75" class="dg-t-sm">300 compromisos · migrado ✓</text>
+
+        <rect x="20" y="96" width="185" height="46" rx="8" class="dg-caja"/>
+        <text x="34" y="117" class="dg-t">Organigrama municipal</text>
+        <text x="34" y="133" class="dg-t-sm">163 unidades · migrado ✓</text>
+
+        <rect x="20" y="154" width="185" height="46" rx="8" class="dg-caja-hi"/>
+        <text x="34" y="175" class="dg-t-hi">Propuesta por IA</text>
+        <text x="34" y="191" class="dg-t-sm">tareas, subtareas y prioridad</text>
+
+        <!-- Fuentes pendientes -->
+        <rect x="20" y="216" width="185" height="46" rx="8" class="dg-caja-falta"/>
+        <text x="34" y="237" class="dg-t">Inspecciones del Alcalde</text>
+        <text x="34" y="253" class="dg-t-sm">audio → tarea · pendiente</text>
+
+        <rect x="20" y="274" width="185" height="46" rx="8" class="dg-caja-falta"/>
+        <text x="34" y="295" class="dg-t">POA (piso 8)</text>
+        <text x="34" y="311" class="dg-t-sm">presupuesto · pendiente</text>
+
+        <!-- Flechas a la base -->
+        <path d="M205,61 C255,61 265,150 300,163" class="dg-l" marker-end="url(#f1)"/>
+        <path d="M205,119 C255,119 265,150 300,168" class="dg-l" marker-end="url(#f1)"/>
+        <path d="M205,177 L300,177" class="dg-l-hi" marker-end="url(#f1h)"/>
+        <path d="M205,239 C255,239 265,200 300,191" class="dg-l-falta" marker-end="url(#f1a)"/>
+        <path d="M205,297 C255,297 265,210 300,196" class="dg-l-falta" marker-end="url(#f1a)"/>
+
+        <!-- Base -->
+        <rect x="305" y="96" width="190" height="140" rx="10" class="dg-caja" stroke-width="1.8"/>
+        <text x="400" y="122" class="dg-t" text-anchor="middle" style="font-weight:700">Base de datos</text>
+        <text x="400" y="142" class="dg-t-sm" text-anchor="middle">Eje → Programa → Proyecto</text>
+        <text x="400" y="158" class="dg-t-sm" text-anchor="middle">→ Actividad → Tarea → Subtarea</text>
+        <line x1="330" y1="172" x2="470" y2="172" class="dg-l" opacity=".4"/>
+        <text x="400" y="192" class="dg-t-sm" text-anchor="middle">calcula avance y prioridad</text>
+        <text x="400" y="212" class="dg-t-sm" text-anchor="middle">registra quién cambió qué</text>
+
+        <!-- Salida -->
+        <path d="M495,166 L580,166" class="dg-l" marker-end="url(#f1)"/>
+        <text x="537" y="158" class="dg-et" text-anchor="middle">consulta</text>
+
+        <rect x="585" y="120" width="190" height="92" rx="10" class="dg-caja"/>
+        <text x="680" y="146" class="dg-t" text-anchor="middle" style="font-weight:700">Tablero</text>
+        <text x="680" y="166" class="dg-t-sm" text-anchor="middle">árbol · semáforo · mapa</text>
+        <text x="680" y="182" class="dg-t-sm" text-anchor="middle">vencimientos · prioridad</text>
+        <text x="680" y="200" class="dg-t-sm" text-anchor="middle">marcar subtareas</text>
+
+        <!-- Vuelta: marcar escribe -->
+        <path d="M680,212 C680,265 540,265 500,215" class="dg-l-hi" marker-end="url(#f1h)"/>
+        <text x="592" y="278" class="dg-et" text-anchor="middle" style="fill:var(--acento)">marcar una subtarea escribe en la base</text>
+      </svg>
+      <figcaption>Las cajas punteadas en ámbar son las dos entradas que todavía faltan.
+        La flecha de vuelta es lo que hace vivo al sistema: el tablero no solo muestra, también recibe.</figcaption>
+    </figure>
+
+    <div class="regla">
+      <p class="t">Puerta única</p>
+      <p>Nada entra por carga manual suelta. Toda tarea llega por una de estas puertas y queda con su
+        origen registrado, para que siempre se pueda responder de dónde salió.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 2 ══════════ -->
+  <section>
+    <h2>2 · Cómo se calcula el avance</h2>
+    <p class="lead">Esta es la pregunta central de la reunión: cuál es la incidencia de una tarea en
+      su actividad, de la actividad en el proyecto, del proyecto en el plan. Así se responde.</p>
+
+    <figure>
+      <svg viewBox="0 0 800 300" role="img" class="dg"
+           aria-label="Marcar una subtarea recalcula el avance de su tarea, que sube ponderado por esfuerzo hasta actividad, proyecto, programa y eje.">
+        <defs>
+          <marker id="f2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="f2h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="var(--acento)"/>
+          </marker>
+        </defs>
+
+        <!-- Paso 1: marcar -->
+        <rect x="18" y="30" width="150" height="86" rx="9" class="dg-caja-hi"/>
+        <text x="93" y="52" class="dg-t-hi" text-anchor="middle">Se marca</text>
+        <text x="93" y="70" class="dg-t-sm" text-anchor="middle">3 de 8 subtareas</text>
+        <text x="93" y="88" class="dg-t-sm" text-anchor="middle">hechas</text>
+        <text x="93" y="107" class="dg-t-num" text-anchor="middle">37,5 %</text>
+
+        <path d="M168,73 L232,73" class="dg-l-hi" marker-end="url(#f2h)"/>
+        <text x="200" y="64" class="dg-et" text-anchor="middle">al instante</text>
+
+        <!-- Paso 2: la tarea -->
+        <rect x="235" y="30" width="160" height="86" rx="9" class="dg-caja"/>
+        <text x="315" y="52" class="dg-t" text-anchor="middle" style="font-weight:700">La tarea</text>
+        <text x="315" y="72" class="dg-t-sm" text-anchor="middle">avance 37,5 %</text>
+        <text x="315" y="90" class="dg-t-sm" text-anchor="middle">esfuerzo 20 días-persona</text>
+        <text x="315" y="108" class="dg-t-sm" text-anchor="middle">← su peso en el total</text>
+
+        <path d="M395,73 L462,73" class="dg-l" marker-end="url(#f2)"/>
+        <text x="428" y="64" class="dg-et" text-anchor="middle">pondera</text>
+
+        <!-- Paso 3: la cadena -->
+        <rect x="465" y="18" width="180" height="34" rx="7" class="dg-caja"/>
+        <text x="555" y="39" class="dg-t" text-anchor="middle">Actividad</text>
+        <rect x="465" y="58" width="180" height="34" rx="7" class="dg-caja"/>
+        <text x="555" y="79" class="dg-t" text-anchor="middle">Proyecto</text>
+        <rect x="465" y="98" width="180" height="34" rx="7" class="dg-caja"/>
+        <text x="555" y="119" class="dg-t" text-anchor="middle">Programa</text>
+        <rect x="465" y="138" width="180" height="34" rx="7" class="dg-caja-hi"/>
+        <text x="555" y="159" class="dg-t-hi" text-anchor="middle">Eje del Plan</text>
+
+        <path d="M655,35 C690,35 690,50 690,68" class="dg-l"/>
+        <path d="M655,75 L690,75" class="dg-l"/>
+        <path d="M655,115 C690,115 690,100 690,82" class="dg-l"/>
+        <path d="M655,155 C700,155 705,110 700,80" class="dg-l"/>
+        <text x="735" y="79" class="dg-et">sube</text>
+
+        <!-- La ponderación, abajo -->
+        <line x1="18" y1="200" x2="782" y2="200" class="dg-l" opacity=".3"/>
+        <text x="18" y="222" class="dg-t" style="font-weight:700">Por qué no se cuentan las tareas por igual</text>
+
+        <rect x="18" y="236" width="356" height="52" rx="8" class="dg-caja"/>
+        <text x="34" y="257" class="dg-t-sm">Tarea A · reponer insumos</text>
+        <text x="34" y="275" class="dg-t">1 día-persona</text>
+        <rect x="240" y="252" width="118" height="20" rx="4" fill="var(--falta)"/>
+        <rect x="240" y="252" width="6" height="20" rx="3" fill="var(--acento)"/>
+        <text x="366" y="267" class="dg-t-sm" text-anchor="end">pesa 1</text>
+
+        <rect x="386" y="236" width="396" height="52" rx="8" class="dg-caja"/>
+        <text x="402" y="257" class="dg-t-sm">Tarea B · cambiar 130.000 luminarias</text>
+        <text x="402" y="275" class="dg-t">120 días-persona</text>
+        <rect x="640" y="252" width="118" height="20" rx="4" fill="var(--falta)"/>
+        <rect x="640" y="252" width="118" height="20" rx="4" fill="var(--acento)" opacity=".85"/>
+        <text x="774" y="267" class="dg-t-sm" text-anchor="end">pesa 120</text>
+      </svg>
+      <figcaption>Cerrar la tarea B mueve el avance del plan 120 veces más que cerrar la tarea A.
+        Contando tareas por igual, ambas valdrían lo mismo.</figcaption>
+    </figure>
+
+    <div class="regla">
+      <p class="t">Está hecha o no está hecha</p>
+      <p>Una subtarea «en curso» <b>no suma</b>. Solo cuenta cuando está terminada. Ponerle un 50%
+        a algo a medio hacer sería inventar una precisión que nadie midió — y el avance dejaría de
+        ser verificable.</p>
+    </div>
+
+    <p class="nota"><b>Las tareas de acción única no llevan subtareas a propósito.</b> Esas no muestran
+      un 0% engañoso: dicen «sin reportar» hasta que se las marca como cerradas, y ahí pasan a 100%.
+      El sistema distingue entre «no se hizo nada» y «nadie lo informó todavía».</p>
+  </section>
+
+  <!-- ══════════ 3 ══════════ -->
+  <section>
+    <h2>3 · A qué eje pertenece cada tarea</h2>
+    <p class="lead">Hay dos formas de responder esto y dan resultados muy distintos. La diferencia
+      no es teórica: cambia los números del tablero.</p>
+
+    <figure>
+      <svg viewBox="0 0 800 260" role="img" class="dg"
+           aria-label="Comparación: asignar el eje por la jerarquía del programa infla Ciudad Eficiente a 98 tareas; asignarlo por la materia del tema da 35. El criterio correcto es por materia.">
+        <defs>
+          <marker id="f3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="f3h" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="var(--acento)"/>
+          </marker>
+        </defs>
+
+        <!-- Tarea de ejemplo -->
+        <rect x="270" y="14" width="260" height="44" rx="8" class="dg-caja"/>
+        <text x="400" y="34" class="dg-t" text-anchor="middle">Una tarea cualquiera</text>
+        <text x="400" y="50" class="dg-t-sm" text-anchor="middle">«arreglar el techo de un centro de salud»</text>
+
+        <!-- Camino A -->
+        <path d="M330,58 C250,80 200,80 190,100" class="dg-l" marker-end="url(#f3)"/>
+        <rect x="30" y="104" width="320" height="120" rx="10" class="dg-caja"/>
+        <text x="190" y="128" class="dg-t" text-anchor="middle" style="font-weight:700">A · Por la jerarquía</text>
+        <text x="190" y="148" class="dg-t-sm" text-anchor="middle">se toma el eje del programa del que cuelga</text>
+        <text x="190" y="172" class="dg-t-sm" text-anchor="middle">todo lo que cuelga del Despacho</text>
+        <text x="190" y="188" class="dg-t-sm" text-anchor="middle">termina en el mismo eje</text>
+        <text x="190" y="212" class="dg-t-num" text-anchor="middle" style="fill:var(--rojo)">98 tareas en un solo eje</text>
+
+        <!-- Camino B -->
+        <path d="M470,58 C550,80 600,80 610,100" class="dg-l-hi" marker-end="url(#f3h)"/>
+        <rect x="450" y="104" width="320" height="120" rx="10" class="dg-caja-hi"/>
+        <text x="610" y="128" class="dg-t-hi" text-anchor="middle">B · Por la materia</text>
+        <text x="610" y="148" class="dg-t-sm" text-anchor="middle">se toma el eje del tema que trata</text>
+        <text x="610" y="172" class="dg-t-sm" text-anchor="middle">un techo de salud va a Ciudad Vital,</text>
+        <text x="610" y="188" class="dg-t-sm" text-anchor="middle">aunque lo ejecute otra oficina</text>
+        <text x="610" y="212" class="dg-t-num" text-anchor="middle" style="fill:var(--acento)">35 tareas · el reparto real</text>
+
+        <text x="400" y="248" class="dg-t-sm" text-anchor="middle">El sistema usa B</text>
+      </svg>
+      <figcaption>El mismo conjunto de 300 tareas, contado de dos maneras. Por jerarquía, un eje
+        acumula 98 tareas y deja de medir nada útil; por materia, quedan 35 y el reparto refleja
+        en qué está trabajando la ciudad.</figcaption>
+    </figure>
+
+    <p class="nota">La diferencia alcanza a <b>130 de las 300 tareas</b> — casi la mitad cambia de eje
+      según qué criterio se use. Por eso está fijado: <b>el eje lo determina la materia del asunto,
+      no de qué oficina cuelga</b>. Quién ejecuta y a qué eje aporta son dos preguntas distintas.</p>
+  </section>
+
+  <!-- ══════════ 4 ══════════ -->
+  <section>
+    <h2>4 · Cómo se decide qué es prioritario</h2>
+    <p class="lead">Cuatro preguntas por tarea. La respuesta ordena las 300 sin que nadie tenga que
+      defender su lista en una reunión.</p>
+
+    <figure>
+      <svg viewBox="0 0 800 250" role="img" class="dg"
+           aria-label="La prioridad combina alcance por impacto por confianza, dividido por esfuerzo. Ejemplo: reprogramar el presupuesto del Pumakatari da la prioridad más alta.">
+        <defs>
+          <marker id="f4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+        </defs>
+
+        <rect x="20" y="20" width="170" height="60" rx="8" class="dg-caja"/>
+        <text x="105" y="42" class="dg-t" text-anchor="middle" style="font-weight:700">¿A cuántos alcanza?</text>
+        <text x="105" y="62" class="dg-t-sm" text-anchor="middle">personas distintas por año</text>
+
+        <rect x="205" y="20" width="170" height="60" rx="8" class="dg-caja"/>
+        <text x="290" y="42" class="dg-t" text-anchor="middle" style="font-weight:700">¿Cuánto les cambia?</text>
+        <text x="290" y="62" class="dg-t-sm" text-anchor="middle">de mínimo a masivo</text>
+
+        <rect x="390" y="20" width="170" height="60" rx="8" class="dg-caja"/>
+        <text x="475" y="42" class="dg-t" text-anchor="middle" style="font-weight:700">¿Qué tan seguro es?</text>
+        <text x="475" y="62" class="dg-t-sm" text-anchor="middle">freno al entusiasmo</text>
+
+        <rect x="575" y="20" width="170" height="60" rx="8" class="dg-caja"/>
+        <text x="660" y="42" class="dg-t" text-anchor="middle" style="font-weight:700">¿Cuánto cuesta?</text>
+        <text x="660" y="62" class="dg-t-sm" text-anchor="middle">días-persona de trabajo</text>
+
+        <path d="M105,80 L105,104" class="dg-l" marker-end="url(#f4)"/>
+        <path d="M290,80 L290,104" class="dg-l" marker-end="url(#f4)"/>
+        <path d="M475,80 L475,104" class="dg-l" marker-end="url(#f4)"/>
+        <path d="M660,80 L660,104" class="dg-l" marker-end="url(#f4)"/>
+
+        <rect x="20" y="108" width="725" height="46" rx="9" class="dg-caja-hi"/>
+        <text x="382" y="137" class="dg-t-hi" text-anchor="middle">
+          ( alcance × impacto × confianza )  ÷  esfuerzo
+        </text>
+
+        <path d="M382,154 L382,178" class="dg-l" marker-end="url(#f4)"/>
+
+        <rect x="120" y="182" width="525" height="52" rx="9" class="dg-caja"/>
+        <text x="145" y="203" class="dg-t-sm">Ejemplo · sostener el servicio Pumakatari hasta fin de año</text>
+        <text x="145" y="223" class="dg-t-sm">150.000 personas × masivo × alta seguridad ÷ 8 días</text>
+        <text x="620" y="216" class="dg-t-num" text-anchor="end" style="fill:var(--acento);font-size:19px">56.250</text>
+      </svg>
+      <figcaption>El esfuerzo divide: mucho beneficio con poco trabajo sube; poco beneficio con
+        mucho trabajo baja. El número sirve para ordenar, no como calificación.</figcaption>
+    </figure>
+
+    <div class="regla">
+      <p class="t">Cada puntaje guarda su supuesto</p>
+      <p>Junto al número queda escrito de dónde salió el alcance y por qué esa seguridad. Así la
+        prioridad se puede discutir con un dato, en vez de discutir impresiones.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 5 ══════════ -->
+  <section>
+    <h2>5 · El cruce con el presupuesto</h2>
+    <p class="lead">Esta parte está construida y esperando el dato. Es la respuesta a «cuidado que el
+      POA esté asignando presupuesto a tareas que para nosotros no priorizan».</p>
+
+    <figure>
+      <svg viewBox="0 0 800 250" role="img" class="dg"
+           aria-label="Cruzando prioridad, presupuesto y avance, el sistema emite tres alertas: prioritario sin plata, plata en no prioritario, y plata sin avance. Falta el dato de presupuesto.">
+        <defs>
+          <marker id="f5" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="f5a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="var(--ambar)"/>
+          </marker>
+        </defs>
+
+        <rect x="20" y="20" width="180" height="52" rx="8" class="dg-caja"/>
+        <text x="110" y="41" class="dg-t" text-anchor="middle">Prioridad</text>
+        <text x="110" y="59" class="dg-t-sm" text-anchor="middle">300 tareas valoradas ✓</text>
+
+        <rect x="20" y="86" width="180" height="52" rx="8" class="dg-caja-falta"/>
+        <text x="110" y="107" class="dg-t" text-anchor="middle">Presupuesto</text>
+        <text x="110" y="125" class="dg-t-sm" text-anchor="middle" style="fill:var(--ambar)">falta el POA</text>
+
+        <rect x="20" y="152" width="180" height="52" rx="8" class="dg-caja"/>
+        <text x="110" y="173" class="dg-t" text-anchor="middle">Avance</text>
+        <text x="110" y="191" class="dg-t-sm" text-anchor="middle">de las subtareas ✓</text>
+
+        <path d="M200,46 C245,46 250,90 285,105" class="dg-l" marker-end="url(#f5)"/>
+        <path d="M200,112 L285,112" class="dg-l-falta" marker-end="url(#f5a)"/>
+        <path d="M200,178 C245,178 250,135 285,120" class="dg-l" marker-end="url(#f5)"/>
+
+        <rect x="288" y="82" width="150" height="60" rx="9" class="dg-caja"/>
+        <text x="363" y="108" class="dg-t" text-anchor="middle" style="font-weight:700">El cruce</text>
+        <text x="363" y="126" class="dg-t-sm" text-anchor="middle">ya construido</text>
+
+        <path d="M438,112 L500,112" class="dg-l" marker-end="url(#f5)"/>
+
+        <rect x="503" y="18" width="277" height="52" rx="8" class="dg-caja"/>
+        <text x="519" y="39" class="dg-t">Prioritario sin plata asignada</text>
+        <text x="519" y="57" class="dg-t-sm">lo importante que nadie financió</text>
+
+        <rect x="503" y="82" width="277" height="52" rx="8" class="dg-caja"/>
+        <text x="519" y="103" class="dg-t">Plata en lo no prioritario</text>
+        <text x="519" y="121" class="dg-t-sm">presupuesto que podría rendir más</text>
+
+        <rect x="503" y="146" width="277" height="52" rx="8" class="dg-caja"/>
+        <text x="519" y="167" class="dg-t">Plata sin avance</text>
+        <text x="519" y="185" class="dg-t-sm">tiene recursos y no se mueve</text>
+
+        <text x="641" y="228" class="dg-t-sm" text-anchor="middle">tres alertas automáticas, revisadas por una persona</text>
+      </svg>
+      <figcaption>Dos de los tres insumos están listos. Con el export del POA, las tres alertas
+        empiezan a funcionar el mismo día.</figcaption>
+    </figure>
+
+    <div class="regla">
+      <p class="t">El sistema avisa; la persona decide</p>
+      <p>Ninguna alerta mueve plata ni cierra nada por su cuenta. Marca dónde mirar y queda registro
+        de quién decidió qué — el POA sigue sus propias reglas, y el sistema solo pone las dos
+        miradas sobre la misma mesa.</p>
+    </div>
+  </section>
+
+  <!-- ══════════ 6 ══════════ -->
+  <section>
+    <h2>6 · Quién puede ver y tocar qué</h2>
+    <p class="lead">Una regla de diseño que conviene conocer, porque explica por qué el sistema es
+      seguro de abrir a más gente.</p>
+
+    <figure>
+      <svg viewBox="0 0 800 190" role="img" class="dg"
+           aria-label="El navegador nunca consulta la base directamente: toda petición pasa por el servidor, que aplica los permisos antes de responder.">
+        <defs>
+          <marker id="f6" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="currentColor"/>
+          </marker>
+          <marker id="f6r" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="var(--rojo)"/>
+          </marker>
+        </defs>
+
+        <rect x="30" y="46" width="170" height="60" rx="9" class="dg-caja"/>
+        <text x="115" y="72" class="dg-t" text-anchor="middle" style="font-weight:700">Navegador</text>
+        <text x="115" y="90" class="dg-t-sm" text-anchor="middle">lo que usa la persona</text>
+
+        <path d="M200,76 L300,76" class="dg-l" marker-end="url(#f6)"/>
+        <text x="250" y="67" class="dg-et" text-anchor="middle">pide</text>
+
+        <rect x="303" y="36" width="190" height="80" rx="9" class="dg-caja-hi"/>
+        <text x="398" y="62" class="dg-t-hi" text-anchor="middle">Servidor</text>
+        <text x="398" y="82" class="dg-t-sm" text-anchor="middle">comprueba quién sos</text>
+        <text x="398" y="100" class="dg-t-sm" text-anchor="middle">y qué te toca ver</text>
+
+        <path d="M493,76 L595,76" class="dg-l" marker-end="url(#f6)"/>
+        <text x="544" y="67" class="dg-et" text-anchor="middle">consulta</text>
+
+        <rect x="598" y="46" width="170" height="60" rx="9" class="dg-caja"/>
+        <text x="683" y="72" class="dg-t" text-anchor="middle" style="font-weight:700">Base de datos</text>
+        <text x="683" y="90" class="dg-t-sm" text-anchor="middle">nunca expuesta</text>
+
+        <!-- Camino prohibido -->
+        <path d="M115,110 C115,160 683,160 683,112" stroke="var(--rojo)" stroke-width="1.4"
+              fill="none" stroke-dasharray="6 5" opacity=".8"/>
+        <line x1="380" y1="140" x2="416" y2="164" stroke="var(--rojo)" stroke-width="2.2"/>
+        <line x1="416" y1="140" x2="380" y2="164" stroke="var(--rojo)" stroke-width="2.2"/>
+        <text x="398" y="184" class="dg-t-sm" text-anchor="middle" style="fill:var(--rojo)">
+          el navegador nunca habla directo con la base</text>
+      </svg>
+      <figcaption>Los permisos se aplican en un solo lugar, del lado del servidor. Aunque alguien
+        manipule lo que ve en su pantalla, no puede pedir datos que no le corresponden.</figcaption>
+    </figure>
+
+    <p class="nota">Sobre esta base se apoyan los seis niveles de acceso ya definidos —desde quien
+      solo carga sus entregables hasta el Despacho, que ve todo—, y también un nivel de <b>solo
+      lectura</b> pensado para quien necesita mirar sin poder tocar nada.</p>
+  </section>
+
+  <footer class="pie">
+    <p><b>Dos reglas que atraviesan todo lo anterior.</b> Primera: nada se borra — cada cambio queda
+      registrado con quién lo hizo y cuándo, así el sistema produce evidencia y no versiones sueltas.
+      Segunda: el sistema propone y la persona dispone — ninguna decisión se cierra sola, ni siquiera
+      las que el sistema puede calcular por su cuenta.</p>
+  </footer>
+
+</div>
+</div>

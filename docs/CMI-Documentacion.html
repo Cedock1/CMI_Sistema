@@ -1,0 +1,530 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CMI GAMLP — Documentación del Sistema</title>
+<style>
+  :root{
+    --bg:#FAF8F3; --bg-soft:#F1EFE8; --card:#FFFFFF;
+    --text:#1F1D29; --muted:#5F5C6B; --faint:#918E9C; --border:#E7E2D7;
+    --morado:#534AB7; --morado-soft:#EDECFC; --morado-ink:#3B3490;
+    --teal:#158460; --teal-soft:#E0F4ED;
+    --ambar:#9A6011; --ambar-soft:#F8EBD6;
+    --rojo:#992A2A; --rojo-soft:#FBE8E8;
+    --shadow:0 1px 2px rgba(31,29,41,.04), 0 8px 24px rgba(31,29,41,.05);
+    --font-display:"Bricolage Grotesque",-apple-system,"Segoe UI",system-ui,sans-serif;
+    --font-body:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+    --font-mono:ui-monospace,"SF Mono",Menlo,"Cascadia Mono",monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#151320; --bg-soft:#1E1B2B; --card:#211E30;
+      --text:#ECEAF3; --muted:#A7A3B6; --faint:#726E85; --border:#302B41;
+      --morado:#9E96F0; --morado-soft:#272248; --morado-ink:#B7B0F5;
+      --teal:#4FC79E; --teal-soft:#12362B;
+      --ambar:#E0A54A; --ambar-soft:#3A2C13;
+      --rojo:#E8817E; --rojo-soft:#3A1E1E;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#151320; --bg-soft:#1E1B2B; --card:#211E30;
+    --text:#ECEAF3; --muted:#A7A3B6; --faint:#726E85; --border:#302B41;
+    --morado:#9E96F0; --morado-soft:#272248; --morado-ink:#B7B0F5;
+    --teal:#4FC79E; --teal-soft:#12362B; --ambar:#E0A54A; --ambar-soft:#3A2C13;
+    --rojo:#E8817E; --rojo-soft:#3A1E1E;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+  :root[data-theme="light"]{
+    --bg:#FAF8F3; --bg-soft:#F1EFE8; --card:#FFFFFF;
+    --text:#1F1D29; --muted:#5F5C6B; --faint:#918E9C; --border:#E7E2D7;
+    --morado:#534AB7; --morado-soft:#EDECFC; --morado-ink:#3B3490;
+    --teal:#158460; --teal-soft:#E0F4ED; --ambar:#9A6011; --ambar-soft:#F8EBD6;
+    --rojo:#992A2A; --rojo-soft:#FBE8E8;
+    --shadow:0 1px 2px rgba(31,29,41,.04), 0 8px 24px rgba(31,29,41,.05);
+  }
+
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:var(--font-body); line-height:1.6; font-size:16px;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(circle at 1px 1px, color-mix(in srgb, var(--text) 5%, transparent) 1px, transparent 0);
+    background-size:34px 34px;
+  }
+  .wrap{max-width:940px; margin:0 auto; padding:0 24px}
+  .mono{font-family:var(--font-mono)}
+  .eyebrow{
+    font-family:var(--font-mono); font-size:11.5px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--morado); font-weight:600;
+  }
+  h1,h2,h3{font-family:var(--font-display); font-weight:700; letter-spacing:-.02em; text-wrap:balance; line-height:1.1}
+  a{color:var(--morado)}
+
+  /* HERO */
+  header.hero{padding:78px 0 40px; border-bottom:1px solid var(--border)}
+  .brand{display:flex; align-items:center; gap:12px; margin-bottom:30px}
+  .mark{
+    width:44px; height:44px; border-radius:13px; background:var(--morado); color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-display); font-weight:700; font-size:15px; letter-spacing:.02em;
+  }
+  .brand b{font-family:var(--font-display); font-size:20px; letter-spacing:-.01em}
+  .brand span{color:var(--faint); font-family:var(--font-mono); font-size:12px}
+  h1{font-size:clamp(34px,6vw,58px); margin:0 0 18px}
+  h1 em{font-style:italic; color:var(--morado)}
+  .lede{font-size:clamp(17px,2.4vw,21px); color:var(--muted); max-width:60ch; margin:0}
+  .tags{display:flex; gap:8px; flex-wrap:wrap; margin-top:26px}
+  .tag{
+    font-family:var(--font-mono); font-size:11px; letter-spacing:.05em; text-transform:uppercase;
+    padding:5px 11px; border-radius:100px; background:var(--bg-soft); color:var(--muted);
+    border:1px solid var(--border);
+  }
+
+  section{padding:52px 0; border-bottom:1px solid var(--border)}
+  section > .wrap > .eyebrow{display:block; margin-bottom:10px}
+  h2{font-size:clamp(24px,3.4vw,32px); margin:0 0 8px}
+  .section-lede{color:var(--muted); max-width:62ch; margin:0 0 30px; font-size:16.5px}
+
+  /* CIFRAS */
+  .cifras{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:30px}
+  .cif{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:15px 17px; box-shadow:var(--shadow)}
+  .cif b{display:block; font-family:var(--font-display); font-size:30px; line-height:1; font-variant-numeric:tabular-nums}
+  .cif span{display:block; margin-top:5px; font-size:12.5px; color:var(--muted); line-height:1.35}
+
+  /* PIPELINE */
+  .pipe{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch}
+  .pipe .step{
+    flex:1 1 150px; background:var(--card); border:1px solid var(--border);
+    border-radius:14px; padding:16px 16px; box-shadow:var(--shadow); position:relative;
+  }
+  .pipe .step .n{
+    font-family:var(--font-mono); font-size:11px; color:var(--morado); font-weight:600; letter-spacing:.08em;
+  }
+  .pipe .step h3{font-size:15px; margin:6px 0 4px}
+  .pipe .step p{margin:0; font-size:13.5px; color:var(--muted); line-height:1.5}
+
+  /* FEATURE CARDS */
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:16px}
+  .feat{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:22px 22px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:9px;
+  }
+  .feat .ico{
+    width:38px; height:38px; border-radius:11px; background:var(--morado-soft); color:var(--morado);
+    display:flex; align-items:center; justify-content:center; font-size:19px;
+  }
+  .feat h3{font-size:17.5px; margin:2px 0 0}
+  .feat p{margin:0; color:var(--muted); font-size:14.5px; line-height:1.55}
+  .feat ul{margin:4px 0 0; padding-left:0; list-style:none; display:flex; flex-direction:column; gap:6px}
+  .feat li{font-size:13.5px; color:var(--text); padding-left:18px; position:relative; line-height:1.45}
+  .feat li::before{content:"›"; position:absolute; left:2px; color:var(--morado); font-weight:700}
+  .who{
+    margin-top:6px; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.05em;
+    text-transform:uppercase; color:var(--faint);
+  }
+
+  /* CHIPS */
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+  .chip{font-family:var(--font-mono); font-size:10.5px; letter-spacing:.05em; text-transform:uppercase; padding:3px 9px; border-radius:100px}
+  .chip.ok{background:var(--teal-soft); color:var(--teal)}
+  .chip.mo{background:var(--morado-soft); color:var(--morado)}
+  .chip.am{background:var(--ambar-soft); color:var(--ambar)}
+  .chip.ro{background:var(--rojo-soft); color:var(--rojo)}
+
+  /* TABLE */
+  .tablewrap{overflow-x:auto; border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow)}
+  table{border-collapse:collapse; width:100%; background:var(--card); font-size:14.5px; min-width:560px}
+  th,td{text-align:left; padding:12px 16px; border-bottom:1px solid var(--border); vertical-align:top}
+  th{font-family:var(--font-mono); font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:var(--faint); font-weight:600}
+  tr:last-child td{border-bottom:none}
+  td b{font-weight:600}
+  .rol{font-family:var(--font-mono); font-size:12.5px; color:var(--morado); white-space:nowrap}
+  .num{font-variant-numeric:tabular-nums; text-align:right}
+
+  /* PRINCIPLES */
+  .principles{display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:14px}
+  .pr{background:var(--bg-soft); border-radius:13px; padding:16px 18px; border:1px solid var(--border)}
+  .pr b{display:block; font-family:var(--font-display); font-size:15px; margin-bottom:3px}
+  .pr span{font-size:13.5px; color:var(--muted)}
+
+  /* CITA */
+  .cita{
+    margin:24px 0 0; padding:16px 20px; background:var(--card); border:1px solid var(--border);
+    border-left:3px solid var(--morado); border-radius:12px; box-shadow:var(--shadow);
+  }
+  .cita p{margin:0; font-size:15.5px; font-style:italic; color:var(--text); line-height:1.55}
+  .cita footer{margin-top:8px; padding:0; font-family:var(--font-mono); font-size:11px;
+    letter-spacing:.05em; text-transform:uppercase; color:var(--faint)}
+
+  /* ROADMAP */
+  .road{display:flex; flex-direction:column; gap:2px}
+  .ritem{display:flex; gap:14px; align-items:flex-start; padding:14px 0; border-bottom:1px dashed var(--border)}
+  .ritem:last-child{border-bottom:none}
+  .rstate{
+    flex-shrink:0; font-family:var(--font-mono); font-size:10px; letter-spacing:.05em; text-transform:uppercase;
+    padding:4px 9px; border-radius:100px; margin-top:2px; white-space:nowrap;
+  }
+  .rstate.hecho{background:var(--teal-soft); color:var(--teal)}
+  .rstate.proximo{background:var(--morado-soft); color:var(--morado)}
+  .rstate.futuro{background:var(--bg-soft); color:var(--faint); border:1px solid var(--border)}
+  .rstate.bloqueado{background:var(--ambar-soft); color:var(--ambar)}
+  .ritem div b{font-family:var(--font-display); font-size:15.5px}
+  .ritem div p{margin:2px 0 0; font-size:13.5px; color:var(--muted)}
+
+  footer{padding:40px 0 60px; color:var(--faint); font-size:13px}
+  footer .mono{font-size:12px}
+
+  @media print{
+    body{background:#fff; background-image:none}
+    section{page-break-inside:avoid; border-bottom:none; padding:26px 0}
+    .feat,.cif{box-shadow:none}
+    header.hero{padding:20px 0}
+    @page{size:A4; margin:14mm}
+  }
+  @media (max-width:560px){
+    header.hero{padding:52px 0 32px}
+    section{padding:40px 0}
+  }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brand">
+      <div class="mark">CMI</div>
+      <div>
+        <b>Cuadro de Mando Integral</b><br>
+        <span>GAMLP · Despacho del Alcalde · Gestión 2026–2031</span>
+      </div>
+    </div>
+    <div class="eyebrow">Documentación funcional</div>
+    <h1>El sistema que convierte lo que dijo el Alcalde en un <em>compromiso con seguimiento</em>.</h1>
+    <p class="lede">
+      El CMI recibe la materia prima de terreno —la transcripción de una inspección, una declaración
+      pública, un acta—, la coteja contra todo lo ya captado, propone el compromiso con su responsable,
+      su plazo y su encaje en el Plan, y lo deja registrado con la cita textual que lo originó. La IA
+      propone; la persona decide. Nada entra sin pasar por esa pantalla.
+    </p>
+    <div class="tags">
+      <span class="tag">La IA propone · la persona decide</span>
+      <span class="tag">Nada se inventa</span>
+      <span class="tag">La cita textual es la prueba</span>
+      <span class="tag">Nada se borra</span>
+      <span class="tag">El avance se calcula, no se declara</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Al 10 de agosto de 2026</div>
+    <h2>Lo que hay hoy en el sistema</h2>
+    <p class="section-lede">Datos reales de la base, no proyecciones.</p>
+    <div class="cifras">
+      <div class="cif"><b>328</b><span>compromisos captados</span></div>
+      <div class="cif"><b>328</b><span>subtareas, la unidad que se marca</span></div>
+      <div class="cif"><b>208</b><span>con la cita textual del Alcalde</span></div>
+      <div class="cif"><b>299</b><span>ubicados en el mapa</span></div>
+      <div class="cif"><b>138</b><span>unidades acompañantes</span></div>
+      <div class="cif"><b>387</b><span>proyectos del Plan</span></div>
+      <div class="cif"><b>163</b><span>unidades del MOF</span></div>
+      <div class="cif"><b>1.092</b><span>eventos de la agenda</span></div>
+    </div>
+    <div class="cita">
+      <p>«La energía la saco del cariño que recibo de ustedes… queremos transformar esta ciudad, y para
+      transformar la ciudad hay que dedicarle harto tiempo.»</p>
+      <footer>Alcalde de La Paz · Mercado Rodríguez · 09-ago-2026 — una de las 208 citas guardadas</footer>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">De principio a fin</div>
+    <h2>El recorrido completo de un compromiso</h2>
+    <p class="section-lede">Un solo camino, de lo que se dijo en terreno al avance en el tablero. Cada paso deja registro.</p>
+    <div class="pipe">
+      <div class="step"><div class="n">01</div><h3>Entra la materia prima</h3><p>Transcripción de inspección, declaración pública, acta o nota. Se pega entera, sin resumir.</p></div>
+      <div class="step"><div class="n">02</div><h3>Cotejo</h3><p>Se compara contra los 328 ya captados. Si el Alcalde vuelve sobre algo, se enriquece; no se clona.</p></div>
+      <div class="step"><div class="n">03</div><h3>Propuesta</h3><p>Compromiso + subtareas, con eje por materia, proyecto del Plan, unidad responsable y puntaje RICE.</p></div>
+      <div class="step"><div class="n">04</div><h3>Corrección</h3><p>La persona revisa y ajusta antes de que el compromiso exista. Nada se escribe sin ese paso.</p></div>
+      <div class="step"><div class="n">05</div><h3>Registro</h3><p>Queda con su cita textual, su pin verificado en el mapa, su fecha de evento y su origen.</p></div>
+      <div class="step"><div class="n">06</div><h3>Trabajo</h3><p>Cada unidad ve lo suyo y marca las subtareas con constancia: una nota o un archivo.</p></div>
+      <div class="step"><div class="n">07</div><h3>Avance</h3><p>Sube solo: de la subtarea a la tarea, al proyecto, al eje. Nadie escribe un porcentaje a mano.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Principios innegociables</div>
+    <h2>Las reglas que no se tocan</h2>
+    <p class="section-lede">Están por encima de cualquier función. Definen en qué se puede confiar del sistema.</p>
+    <div class="principles">
+      <div class="pr"><b>La IA propone; la persona decide</b><span>Ningún compromiso llega a la base sin que alguien lo haya revisado en pantalla y confirmado.</span></div>
+      <div class="pr"><b>Nada se inventa</b><span>Ni coordenadas, ni jurisdicciones, ni plazos. Lo que el audio no dice, se marca «verificar» o se pregunta.</span></div>
+      <div class="pr"><b>La cita textual es la prueba</b><span>Se guarda verbatim, nunca corregida. Es lo que permite, dentro de un año, saber de dónde salió un compromiso.</span></div>
+      <div class="pr"><b>El eje va por materia</b><span>Un mercado es Ciudad Productiva aunque lo ejecute otra secretaría. El eje describe de qué trata, no quién trabaja.</span></div>
+      <div class="pr"><b>Enriquecer, no clonar</b><span>Cuando el Alcalde vuelve sobre un tema, la cita nueva se suma a la tarea existente. Diez compromisos ya tienen más de un evento detrás.</span></div>
+      <div class="pr"><b>La captación es el día del evento</b><span>No el día en que se cargó. Una inspección del 2 de agosto se registra con esa fecha aunque se procese después.</span></div>
+      <div class="pr"><b>El avance se calcula</b><span>Sale de subtareas binarias —hecha o no hecha— ponderadas por esfuerzo. Nadie declara un porcentaje.</span></div>
+      <div class="pr"><b>Nada se borra</b><span>Bitácora que solo agrega. El sistema produce evidencia de gestión, no sanciones.</span></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Funcionalidades</div>
+    <h2>Qué hace el sistema, hoy</h2>
+    <p class="section-lede">Todo lo construido y en funcionamiento, organizado por el momento en que se usa.</p>
+    <div class="grid">
+
+      <div class="feat">
+        <div class="ico">🎙️</div>
+        <h3>El embudo de captación</h3>
+        <p>La puerta única para que un compromiso entre al CMI. La IA lee la materia prima y arma la propuesta anclada a las reglas duras.</p>
+        <ul>
+          <li>Transcripción de inspección, declaración pública, acta o texto pegado</li>
+          <li>Distingue lo que el Alcalde <b>instruyó</b> de lo que solo comentó u opinó</li>
+          <li>Separa el qué (verificable) del cómo (la manera de hacerlo)</li>
+          <li>Identifica la unidad responsable entre las 163 del MOF</li>
+          <li>Propone el proyecto del Plan y el eje por materia</li>
+          <li>Las reglas viven en un archivo versionado: el prompt las cita, no las repite</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">🔁</div>
+        <h3>Cotejo y enriquecimiento</h3>
+        <p>Antes de proponer algo nuevo, mira si ya está. Es lo que evita que el CMI se llene de duplicados.</p>
+        <ul>
+          <li>El catálogo de compromisos ya captados entra en el análisis</li>
+          <li>Si es el mismo compromiso, suma la cita nueva en vez de crear otro</li>
+          <li>Exige un motivo escrito: sin él no se distingue enriquecer de duplicar mal</li>
+          <li>La cita nunca se pisa: se acumula, con su evento y su fecha</li>
+          <li><b>10 compromisos</b> ya vienen de más de un evento</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">📍</div>
+        <h3>Ubicación verificada</h3>
+        <p>El compromiso se ubica en el mapa, y la ubicación se comprueba dos veces antes de guardarse.</p>
+        <ul>
+          <li>Geocodificación contra OpenStreetMap</li>
+          <li>Doble sello: el resultado debe decir La Paz <b>y</b> caer dentro del municipio</li>
+          <li>Si no pasa, no se guarda coordenada: se deja vacía y se avisa</li>
+          <li>Cruce con la agenda del Alcalde para deducir el lugar del evento</li>
+          <li><b>299 de 328</b> compromisos tienen su pin</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">📅</div>
+        <h3>Cruce con la agenda</h3>
+        <p>La agenda del Alcalde está cargada y sirve para fechar y ubicar lo que la transcripción no dice.</p>
+        <ul>
+          <li>1.092 eventos, de noviembre 2025 a octubre 2026</li>
+          <li>Sincronización desde el calendario, sin copiar a mano</li>
+          <li>Cada compromiso puede quedar ligado a su evento de agenda</li>
+          <li>El lugar sale del paréntesis del título cuando no viene declarado</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">🏛️</div>
+        <h3>Multi-secretaría</h3>
+        <p>Un compromiso rara vez es de una sola unidad. El sistema distingue cuatro formas de estar involucrado.</p>
+        <ul>
+          <li><b>Responsable</b>: responde por el resultado</li>
+          <li><b>Concurrente</b>: ejecuta una parte sustantiva</li>
+          <li><b>Apoyo</b>: aporta un insumo puntual</li>
+          <li><b>Territorial</b>: la subalcaldía responde por su jurisdicción aunque no ejecute</li>
+          <li>Quien ejecuta debe tener al menos una subtarea a su nombre; si no, el sistema lo señala</li>
+        </ul>
+        <div class="chips">
+          <span class="chip mo">74 concurrentes</span>
+          <span class="chip am">49 apoyos</span>
+          <span class="chip ok">15 territoriales</span>
+        </div>
+      </div>
+
+      <div class="feat">
+        <div class="ico">🎯</div>
+        <h3>Priorización RICE</h3>
+        <p>Cada compromiso recibe un puntaje comparable para saber por dónde empezar.</p>
+        <ul>
+          <li>Alcance × impacto × confianza ÷ esfuerzo</li>
+          <li>La IA lo propone con una nota que explica cada factor; la persona lo ajusta</li>
+          <li>El detalle de la valoración se ve en el tablero, no queda oculto</li>
+          <li>La urgencia (el semáforo del plazo) es un eje aparte del puntaje</li>
+          <li>Los 328 compromisos tienen puntaje</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">📈</div>
+        <h3>Avance por evidencia</h3>
+        <p>El porcentaje no se declara: se calcula desde abajo, y cada marca deja constancia.</p>
+        <ul>
+          <li>La subtarea es binaria: está hecha o no está, sin discusión</li>
+          <li>Marcarla exige una nota o un archivo — no basta el clic</li>
+          <li>La tarea pondera sus subtareas por esfuerzo, no por conteo</li>
+          <li>El proyecto, el programa y el eje agregan hacia arriba</li>
+          <li>Sin reporte es <b>nulo</b>, no cero: no se confunde «nadie informó» con «no se hizo»</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">🧭</div>
+        <h3>Trazabilidad de origen</h3>
+        <p>De qué evento viene cada compromiso, y qué compromisos tocó cada evento. Las dos direcciones.</p>
+        <ul>
+          <li>Un renglón por cada vez que un evento tocó una tarea: al darla de alta y al enriquecerla</li>
+          <li>Guarda la fecha del <b>evento</b>, no la de carga, más el archivo fuente</li>
+          <li>Responde «¿qué compromisos generó la inspección del 7 de agosto?»</li>
+          <li>Marca los compromisos sobre los que el Alcalde volvió: dice en qué insiste</li>
+          <li>Append-only, como todo lo demás</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">🗂️</div>
+        <h3>Seguimiento de transcripciones</h3>
+        <p>Qué audios de inspección ya entraron y cuáles faltan, sin una lista que alguien tenga que actualizar.</p>
+        <ul>
+          <li>Cruza la carpeta de transcripciones contra lo registrado</li>
+          <li>La etiqueta se calcula: verde en cuanto sus compromisos existen</li>
+          <li>Distingue «cargada por acá» de «hay tareas de ese día, sin archivo declarado»</li>
+          <li>Muestra los audios que todavía no tienen transcripción</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">🚦</div>
+        <h3>Señales de calidad</h3>
+        <p>Vistas que marcan lo que hay que revisar. Son alertas de gestión, no errores de datos.</p>
+        <ul>
+          <li>Acompañantes que ejecutan pero no tienen ninguna subtarea a su nombre</li>
+          <li>Subtareas dictadas por el Alcalde que perdieron su cita</li>
+          <li>Coordenadas que cayeron fuera del municipio</li>
+          <li>Compromisos sin encaje claro en ningún proyecto del Plan</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">🧪</div>
+        <h3>Esquema de pruebas</h3>
+        <p>Una copia del sistema donde se puede escribir sin tocar los datos reales.</p>
+        <ul>
+          <li>Se levanta <b>desde las migraciones</b>, no copiando la base: así detecta desvíos</li>
+          <li>Se activa con una cabecera, y solo donde está explícitamente habilitado</li>
+          <li>En producción esa cabecera no hace nada</li>
+        </ul>
+      </div>
+
+      <div class="feat">
+        <div class="ico">💰</div>
+        <h3>Conciliación con el POA</h3>
+        <p>Cruzar prioridad con presupuesto para ver dónde no coinciden. Construido; espera el dato.</p>
+        <ul>
+          <li>Prioridad relativa por proyecto, desde el RICE promedio</li>
+          <li>Tres alertas: prioritario sin plata, plata en lo no prioritario, plata sin avance</li>
+          <li>Le falta el export de presupuesto: partida, monto y a qué actividad corresponde</li>
+        </ul>
+        <div class="who">Bloqueado por un insumo externo</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Quién ve qué</div>
+    <h2>Seis niveles de acceso</h2>
+    <p class="section-lede">El nivel se deriva del cargo, no del nombre. Cada quien ve y hace exactamente lo suyo.</p>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Nivel</th><th>Ve</th><th>Puede</th></tr></thead>
+        <tbody>
+          <tr><td><span class="rol">Administrador</span></td><td>Todo</td><td>Todo + configuración, corregir datos, destrabar</td></tr>
+          <tr><td><span class="rol">Director</span></td><td>Todo su ámbito</td><td>Captar, dar visto bueno, cerrar, reasignar, elevar</td></tr>
+          <tr><td><span class="rol">Jefatura de unidad</span></td><td>Su secretaría</td><td>Cerrar y reasignar <b>dentro de su unidad</b></td></tr>
+          <tr><td><span class="rol">Rol especializado</span></td><td>Sus tareas y su expediente</td><td>Cargar constancias, cerrar subtareas propias</td></tr>
+          <tr><td><span class="rol">Asistencia</span></td><td>Lo asignado</td><td>Cargar constancias</td></tr>
+          <tr><td><span class="rol">Observador</span></td><td>Todo</td><td>Nada — lectura pura</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Cómo está construido</div>
+    <h2>Anclaje y arquitectura</h2>
+    <div class="grid">
+      <div class="feat">
+        <div class="ico">📜</div>
+        <h3>Las reglas viven fuera del código</h3>
+        <p>Los principios, el vocabulario de roles, la distinción entre el qué y el cómo, la redacción de la
+          descripción y la cita: todo en un archivo versionado. El prompt las <b>cita</b>; no las repite.
+          Cambiar una regla es cambiar el archivo, no buscarla dentro de un prompt.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">🏛️</div>
+        <h3>Conoce el GAMLP</h3>
+        <p>Las 163 unidades del MOF con su secretaría y sus funciones, los 10 ejes del Plan 2026–2031 con sus
+          programas y sus 387 proyectos, y los macrodistritos con sus subalcaldías: todo cargado. Por eso el
+          sistema propone la unidad concreta y el proyecto concreto, no una categoría genérica.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">🔒</div>
+        <h3>Seguro por diseño</h3>
+        <p>Todo el acceso a datos pasa por el servidor; el navegador nunca consulta la base directamente.
+          La bitácora solo agrega. Las credenciales viven fuera del repositorio y el directorio de secretos
+          está excluido del control de versiones desde antes de que existiera el repositorio.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">🧬</div>
+        <h3>Evolución, no reemplazo</h3>
+        <p>El CMI es la evolución del tablero de avance de la gestión anterior y sigue la arquitectura del
+          sistema hermano de la DRICA: mismo stack, mismo patrón de acceso a datos, mismo principio de reglas
+          versionadas. Lo que cambia es el dominio, no la forma de construir.</p>
+      </div>
+      <div class="feat">
+        <div class="ico">📖</div>
+        <h3>Todo cambio queda escrito</h3>
+        <p>Cada paso cerrado —qué se hizo, por qué, qué se rompió y cómo se arregló— queda documentado en el
+          mismo repositorio, en el momento. Incluidos los errores: un sistema de evidencia que esconde sus
+          propios fallos no sirve para lo que se construyó.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Hacia dónde va</div>
+    <h2>Lo que viene</h2>
+    <p class="section-lede">El núcleo está completo y captando compromisos reales. Lo siguiente amplía el alcance.</p>
+    <div class="road">
+      <div class="ritem"><span class="rstate hecho">En uso</span><div><b>Captación de compromisos</b><p>Embudo, cotejo, enriquecimiento, geolocalización verificada, cruce con la agenda y trazabilidad de origen.</p></div></div>
+      <div class="ritem"><span class="rstate hecho">En uso</span><div><b>Tablero y avance</b><p>Avance ponderado por esfuerzo desde subtareas binarias, semáforo de plazo, RICE con su detalle, mapa y vista por eje.</p></div></div>
+      <div class="ritem"><span class="rstate hecho">En uso</span><div><b>Multi-secretaría con rol territorial</b><p>Cuatro formas de estar involucrado en un compromiso, con la señal que marca a quien ejecuta sin trabajo repartido.</p></div></div>
+      <div class="ritem"><span class="rstate proximo">Próximo</span><div><b>Las transcripciones pendientes</b><p>Quedan cinco por procesar. Cada una se marca sola en verde cuando sus compromisos entran.</p></div></div>
+      <div class="ritem"><span class="rstate proximo">Próximo</span><div><b>Adopción por las secretarías</b><p>Marcar con constancia funciona y está a un clic, pero todavía nadie marcó una subtarea. Ampliar permisos es lo que lo destraba.</p></div></div>
+      <div class="ritem"><span class="rstate bloqueado">Bloqueado</span><div><b>Revisión de las metas por las secretarías</b><p>Las 85 metas e indicadores de proyecto se redactaron desde lo que las tareas cubren. Una meta mal puesta desalinea el semáforo del proyecto entero.</p></div></div>
+      <div class="ritem"><span class="rstate bloqueado">Bloqueado</span><div><b>Conciliación con el POA</b><p>La lógica está construida y espera el export de presupuesto: partida, monto y a qué actividad o tarea corresponde.</p></div></div>
+      <div class="ritem"><span class="rstate futuro">Futuro</span><div><b>Los 302 proyectos sin evidencia</b><p>No se arman con IA a propósito: van a las secretarías. Armarlos sin base sería inventar 302 metas que alguien tendría que revisar enteras.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="mono">GAMLP · Despacho del Alcalde · Gobierno Autónomo Municipal de La Paz</div>
+    <div style="margin-top:6px">Cuadro de Mando Integral (CMI) — documentación funcional · Agosto 2026</div>
+    <div style="margin-top:4px">Cifras verificadas contra la base el 10 de agosto de 2026</div>
+  </div>
+</footer>

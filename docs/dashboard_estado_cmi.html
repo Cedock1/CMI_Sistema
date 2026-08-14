@@ -1,0 +1,471 @@
+<title>CMI GAMLP — Estado del sistema</title>
+<style>
+  /* Paleta: teal institucional del CMI como hue de magnitud; estados con los pasos
+     validados (verde/ámbar/rojo pasan separación por daltonismo ΔE 11,3). El ámbar
+     queda bajo 3:1 en modo claro por diseño: la mitigación es que TODO segmento de
+     estado lleva su número y su etiqueta — el color nunca carga el significado solo. */
+  .viz {
+    color-scheme: light;
+    --surface:   #ffffff;  --plano:     #f4f6f6;
+    --ink:       #12191c;  --ink-2:     #4a5a60;  --ink-3: #78888e;
+    --linea:     #dde5e7;  --linea-2:   #eef2f3;
+    --teal-700:#08403f; --teal-600:#0a5352; --teal-500:#0f6e6e;
+    --teal-400:#2f8f89; --teal-300:#69b2ac; --teal-200:#a5d1cd; --teal-100:#d7ebe9;
+    --verde:#0ca30c; --ambar:#fab219; --rojo:#d03b3b; --gris:#9aa7ad;
+    --falta:  #e5ebec;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz {
+      color-scheme: dark;
+      --surface: #161e22; --plano: #0e1417;
+      --ink: #eef4f5; --ink-2: #a8b8be; --ink-3: #7d8d93;
+      --linea: #26333a; --linea-2: #1d272c;
+      --teal-700:#d7ebe9; --teal-600:#a5d1cd; --teal-500:#3bb2a4;
+      --teal-400:#2f9a90; --teal-300:#24827a; --teal-200:#186a64; --teal-100:#10514e;
+      --verde:#22b455; --ambar:#e0a53a; --rojo:#e46374; --gris:#7f8d94;
+      --falta: #223037;
+    }
+  }
+  :root[data-theme="dark"] .viz {
+    color-scheme: dark;
+    --surface: #161e22; --plano: #0e1417;
+    --ink: #eef4f5; --ink-2: #a8b8be; --ink-3: #7d8d93;
+    --linea: #26333a; --linea-2: #1d272c;
+    --teal-700:#d7ebe9; --teal-600:#a5d1cd; --teal-500:#3bb2a4;
+    --teal-400:#2f9a90; --teal-300:#24827a; --teal-200:#186a64; --teal-100:#10514e;
+    --verde:#22b455; --ambar:#e0a53a; --rojo:#e46374; --gris:#7f8d94;
+    --falta: #223037;
+  }
+
+  *{box-sizing:border-box}
+  .viz{background:var(--plano);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;margin:0;padding:0 0 60px}
+  .wrap{max-width:940px;margin:0 auto;padding:0 clamp(16px,4vw,28px)}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* Encabezado */
+  .head{padding:52px 0 34px;border-bottom:1px solid var(--linea)}
+  .kicker{font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--teal-500);
+    font-weight:700;margin:0 0 12px}
+  .head h1{font-size:clamp(27px,4.4vw,40px);line-height:1.15;margin:0 0 14px;letter-spacing:-.01em}
+  .head .sub{font-size:15.5px;color:var(--ink-2);margin:0;max-width:64ch}
+  .fecha{margin-top:20px;font-size:12px;color:var(--ink-3)}
+
+  section{padding:44px 0;border-bottom:1px solid var(--linea)}
+  section:last-of-type{border-bottom:0}
+  h2{font-size:21px;margin:0 0 6px;letter-spacing:-.01em}
+  .lead{font-size:14.5px;color:var(--ink-2);margin:0 0 26px;max-width:66ch}
+  h3{font-size:13px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+    font-weight:700;margin:30px 0 12px}
+
+  /* Cita del audio */
+  .cita{border-left:3px solid var(--teal-500);padding:3px 0 3px 18px;margin:0 0 26px;
+    font-size:16px;line-height:1.6;color:var(--ink)}
+  .cita cite{display:block;margin-top:7px;font-size:12px;color:var(--ink-3);font-style:normal;
+    letter-spacing:.03em}
+
+  /* Cifras */
+  .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:12px;margin:22px 0}
+  .kpi{background:var(--surface);border:1px solid var(--linea);border-radius:12px;padding:15px 16px}
+  .kpi .n{font-size:29px;font-weight:700;line-height:1.05;letter-spacing:-.02em}
+  .kpi .k{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);
+    font-weight:600;margin-top:5px}
+  .kpi .d{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+  .kpi.alerta .n{color:var(--rojo)}
+
+  .hero{font-size:clamp(44px,8vw,68px);font-weight:700;line-height:1;letter-spacing:-.03em;
+    color:var(--teal-500)}
+
+  /* Barras de magnitud — un solo hue, la identidad va en la etiqueta */
+  .barras{background:var(--surface);border:1px solid var(--linea);border-radius:12px;padding:16px 18px}
+  .barra{display:grid;grid-template-columns:minmax(96px,190px) 1fr auto;gap:13px;align-items:center;
+    padding:5px 0;font-size:13px}
+  .barra .et{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .pista{background:var(--falta);height:11px;border-radius:3px;overflow:hidden;position:relative}
+  .relleno{height:100%;border-radius:3px;background:var(--teal-500)}
+  .barra .v{font-size:12.5px;font-weight:600;min-width:56px;text-align:right;color:var(--ink)}
+  .barra .v small{font-weight:400;color:var(--ink-3);font-size:11px}
+
+  /* Escala: lo que hay contra lo pedido */
+  .escala .relleno{background:var(--teal-500)}
+  .escala .barra.corto .relleno{background:var(--rojo)}
+  .escala .barra.corto .v{color:var(--rojo)}
+
+  /* Estado: cada segmento con número + etiqueta (el color nunca va solo) */
+  .estados{display:flex;gap:2px;height:34px;border-radius:8px;overflow:hidden;margin:6px 0 10px}
+  .estados > div{display:flex;align-items:center;justify-content:center;font-size:12.5px;
+    font-weight:700;color:#fff}
+  .est-leyenda{display:flex;flex-wrap:wrap;gap:16px;font-size:12.5px;color:var(--ink-2)}
+  .est-leyenda span{display:inline-flex;align-items:center;gap:6px}
+  .punto{width:11px;height:11px;border-radius:3px;flex:none}
+
+  /* Cita → resolución */
+  .par{background:var(--surface);border:1px solid var(--linea);border-radius:12px;
+    padding:17px 19px;margin-bottom:11px}
+  .par .pidio{font-size:14.5px;line-height:1.5;color:var(--ink);margin:0 0 11px}
+  .par .pidio::before{content:"« "}
+  .par .pidio::after{content:" »"}
+  .par .hizo{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);
+    margin:0;padding-top:11px;border-top:1px solid var(--linea-2)}
+  .tick{color:var(--verde);font-weight:700;flex:none;line-height:1.45}
+  .par .hizo b{color:var(--ink);font-weight:600}
+
+  /* Tablas */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;background:var(--surface);
+    border:1px solid var(--linea);border-radius:12px;overflow:hidden}
+  th{text-align:left;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);
+    font-weight:700;padding:11px 14px;background:var(--linea-2)}
+  td{padding:11px 14px;border-top:1px solid var(--linea-2);vertical-align:top}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tabla-scroll{overflow-x:auto}
+
+  /* Bloques destacados */
+  .pedido{background:var(--surface);border:1px solid var(--teal-500);border-radius:12px;padding:20px 22px}
+  .pedido h3{margin-top:0;color:var(--teal-500)}
+  .pedido ol{margin:0;padding-left:20px;font-size:14px;color:var(--ink-2)}
+  .pedido li{margin-bottom:7px}
+  .pedido li b{color:var(--ink)}
+
+  .riesgo{background:var(--surface);border:1px solid var(--linea);border-left:3px solid var(--ambar);
+    border-radius:8px;padding:14px 17px;margin-bottom:10px}
+  .riesgo.grave{border-left-color:var(--rojo)}
+  .riesgo p{margin:0;font-size:13.5px;color:var(--ink-2)}
+  .riesgo p.t{font-weight:600;color:var(--ink);font-size:14px;margin-bottom:4px}
+
+  /* Ruta */
+  .fase{display:grid;grid-template-columns:26px 1fr;gap:14px;padding:11px 0;
+    border-bottom:1px solid var(--linea-2);font-size:13.5px}
+  .fase:last-child{border-bottom:0}
+  .marca{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;flex:none;margin-top:1px}
+  .m-ok{background:var(--verde);color:#fff}
+  .m-curso{background:var(--ambar);color:#3a2a00}
+  .m-pend{background:var(--falta);color:var(--ink-3);border:1px solid var(--linea)}
+  .fase b{display:block;color:var(--ink);font-size:14px;margin-bottom:2px}
+  .fase span{color:var(--ink-2)}
+
+  .nota{font-size:12.5px;color:var(--ink-3);margin-top:14px;line-height:1.6}
+  .pie{padding:32px 0 0;font-size:12px;color:var(--ink-3);line-height:1.7}
+  .pie code{background:var(--linea-2);padding:1px 6px;border-radius:4px;font-size:11px}
+  @media(max-width:640px){
+    .barra{grid-template-columns:minmax(76px,1fr) 1.2fr auto;gap:9px;font-size:12px}
+    .estados > div{font-size:11px}
+  }
+</style>
+
+<div class="viz">
+<div class="wrap">
+
+  <header class="head">
+    <p class="kicker">Gobierno Autónomo Municipal de La Paz · Despacho</p>
+    <h1>Cuadro de Mando Integral</h1>
+    <p class="sub">Estado del sistema frente a lo que se pidió en la reunión del 5 de agosto:
+      qué está construido y funcionando, qué información falta, y qué se necesita para seguir.</p>
+    <p class="fecha">Datos tomados directamente del sistema · 7 de agosto de 2026</p>
+  </header>
+
+  <!-- 1 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>El sueño, y dónde estamos</h2>
+    <blockquote class="cita">
+      Lo que yo sueño es tener un cuadro de mando integral… una plataforma que tiene todo en la
+      alcaldía: lo estratégico, lo operativo, lo recurrente.
+      <cite>Reunión del 5 de agosto</cite>
+    </blockquote>
+
+    <p class="lead"><b>El cuadro existe, funciona y tiene 300 tareas cargadas.</b> Se entra, se abre
+      un eje, se baja a programa, proyecto, tarea y subtarea, y cada nivel muestra su avance, su
+      semáforo y su ubicación en la ciudad. Lo que sigue no es construirlo: es llenarlo.</p>
+
+    <h3>La escala pedida contra la que hay</h3>
+    <div class="barras escala">
+      <div class="barra"><span class="et">Programas</span>
+        <span class="pista"><span class="relleno" style="width:100%"></span></span>
+        <span class="v">100 <small>/ 100</small></span></div>
+      <div class="barra"><span class="et">Proyectos</span>
+        <span class="pista"><span class="relleno" style="width:77%"></span></span>
+        <span class="v">386 <small>/ 500</small></span></div>
+      <div class="barra corto"><span class="et">Actividades</span>
+        <span class="pista"><span class="relleno" style="width:2.8%"></span></span>
+        <span class="v">84 <small>/ 3.000</small></span></div>
+      <div class="barra corto"><span class="et">Tareas</span>
+        <span class="pista"><span class="relleno" style="width:3%"></span></span>
+        <span class="v">300 <small>/ 10.000</small></span></div>
+    </div>
+    <p class="nota">La meta de cada nivel es la que se mencionó en la reunión. <b>La capa estratégica
+      está armada; la operativa casi no existe todavía</b> — y eso coincide exactamente con lo que se
+      dijo ese día: «los programas están cerrados; tenemos los proyectos como un listado, pero no
+      hemos avanzado más en los proyectos». Ese hueco es el trabajo que sigue, secretaría por
+      secretaría.</p>
+  </section>
+
+  <!-- 2 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Lo que se pidió, y cómo quedó resuelto</h2>
+    <p class="lead">Cada punto planteado en la reunión, con lo que hoy responde el sistema.</p>
+
+    <div class="par">
+      <p class="pidio">Tendría que ver cuál es la incidencia de esta tarea en la actividad, cuál es la
+        incidencia de la actividad en el proyecto, y cuál es el nivel de incidencia del proyecto en el plan.</p>
+      <p class="hizo"><span class="tick">✓</span><span><b>Resuelto: el avance sube ponderado por el
+        trabajo que cuesta cada tarea</b>, no contando tareas por igual. Se estimó el esfuerzo de las
+        300 —de 1 día a 120— y suman <b>6.514 días-persona</b>, unos 25 años de trabajo de una persona.
+        Así, cerrar una tarea de tres meses mueve la aguja mucho más que cerrar un trámite de un día.</span></p>
+    </div>
+
+    <div class="par">
+      <p class="pidio">Sin valoración vos no sabés en realidad por dónde priorizar tareas.</p>
+      <p class="hizo"><span class="tick">✓</span><span><b>Resuelto: las 300 tareas tienen valoración
+        completa.</b> Se aplicó el mismo método que ya usa el sistema de la DRICA: a cuánta gente
+        alcanza al año, cuánto le cambia la vida a cada uno, qué tan segura es esa estimación, y
+        cuánto trabajo cuesta. Cada puntaje guarda escrito el supuesto con que se calculó, para poder
+        discutirlo.</span></p>
+    </div>
+
+    <div class="par">
+      <p class="pidio">Poder entrar y hacer clic en un programa, ver todos sus proyectos, hacer clic en
+        un proyecto, ver sus actividades, y ver con un semáforo cómo está yendo.</p>
+      <p class="hizo"><span class="tick">✓</span><span><b>Resuelto: el tablero baja cinco niveles</b>
+        — eje, programa, proyecto, tarea y subtarea — con semáforo en cada uno. Las subtareas se marcan
+        con un clic, y ese clic es lo que genera el avance de toda la cadena hacia arriba.</span></p>
+    </div>
+
+    <div class="par">
+      <p class="pidio">O decir: la próxima semana, ¿qué tareas deberían estar ya concluidas?</p>
+      <p class="hizo"><span class="tick">✓</span><span><b>Resuelto, y el dato preocupa:</b> hay
+        <b>144 tareas ya vencidas</b> y <b>68 que vencen dentro de los próximos 30 días</b>. El tablero
+        las filtra con un clic.</span></p>
+    </div>
+
+    <div class="par">
+      <p class="pidio">La idea es que esto te lo vaya encadenando… y no siempre se encadenan.</p>
+      <p class="hizo"><span class="tick">✓</span><span><b>Resuelto: las 300 tareas quedaron
+        encadenadas</b> a su proyecto y su programa. Las que no casaban con ningún proyecto concreto
+        se agruparon en <b>6 proyectos paraguas</b>, tal como se propuso en la reunión, en vez de
+        quedar sueltas.</span></p>
+    </div>
+
+    <div class="par">
+      <p class="pidio">Hay algunos proyectos que no los ve una secretaría: los ven 2 o 3 secretarías
+        al mismo tiempo.</p>
+      <p class="hizo"><span class="tick">✓</span><span><b>Resuelto:</b> el sistema registra secretarías
+        concurrentes. Hoy hay <b>62 vínculos</b> de tareas que involucran a más de una, cada una con su
+        responsable con nombre.</span></p>
+    </div>
+  </section>
+
+  <!-- 3 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Qué tiene el sistema hoy</h2>
+    <p class="lead">Todo lo que sigue sale de consultar la base directamente, no de un informe cargado a mano.</p>
+
+    <div class="kpis">
+      <div class="kpi"><p class="n tnum">300</p><p class="k">Tareas</p><p class="d">con responsable y plazo</p></div>
+      <div class="kpi"><p class="n tnum">232</p><p class="k">Subtareas</p><p class="d">los entregables concretos</p></div>
+      <div class="kpi"><p class="n tnum">386</p><p class="k">Proyectos</p><p class="d">en 100 programas</p></div>
+      <div class="kpi"><p class="n tnum">163</p><p class="k">Unidades</p><p class="d">del organigrama municipal</p></div>
+      <div class="kpi alerta"><p class="n tnum">144</p><p class="k">Vencidas</p><p class="d">pasaron su plazo</p></div>
+      <div class="kpi"><p class="n tnum">271</p><p class="k">Ubicadas</p><p class="d">en el mapa de la ciudad</p></div>
+    </div>
+
+    <h3>Estado de salud de las 300 tareas</h3>
+    <div class="estados" role="img"
+         aria-label="145 en marcha, 144 vencidas o en riesgo, 8 sin dato, 3 por vencer">
+      <div style="width:48.3%;background:var(--verde)">145</div>
+      <div style="width:48%;background:var(--rojo)">144</div>
+      <div style="width:2.7%;background:var(--gris)">8</div>
+      <div style="width:1%;background:var(--ambar)">3</div>
+    </div>
+    <p class="est-leyenda">
+      <span><i class="punto" style="background:var(--verde)"></i> 145 en marcha</span>
+      <span><i class="punto" style="background:var(--rojo)"></i> 144 vencidas o en riesgo</span>
+      <span><i class="punto" style="background:var(--gris)"></i> 8 sin dato</span>
+      <span><i class="punto" style="background:var(--ambar)"></i> 3 por vencer</span>
+    </p>
+    <p class="nota"><b>Casi la mitad de las tareas están vencidas.</b> No es un problema del sistema:
+      es lo que el sistema deja ver por primera vez.</p>
+
+    <h3>Tareas por eje del Plan Ciudad Humana</h3>
+    <div class="barras">
+      <div class="barra"><span class="et">Ciudad Vital</span><span class="pista"><span class="relleno" style="width:100%"></span></span><span class="v">50</span></div>
+      <div class="barra"><span class="et">Ciudad Conectada</span><span class="pista"><span class="relleno" style="width:96%"></span></span><span class="v">48</span></div>
+      <div class="barra"><span class="et">Ciudad Planificada y Habitable</span><span class="pista"><span class="relleno" style="width:84%"></span></span><span class="v">42</span></div>
+      <div class="barra"><span class="et">Ciudad de Cuidados y Derechos</span><span class="pista"><span class="relleno" style="width:74%"></span></span><span class="v">37</span></div>
+      <div class="barra"><span class="et">Ciudad Eficiente y Transparente</span><span class="pista"><span class="relleno" style="width:70%"></span></span><span class="v">35</span></div>
+      <div class="barra"><span class="et">Ciudad Verde</span><span class="pista"><span class="relleno" style="width:62%"></span></span><span class="v">31</span></div>
+      <div class="barra"><span class="et">Ciudad Cultural y Turística</span><span class="pista"><span class="relleno" style="width:58%"></span></span><span class="v">29</span></div>
+      <div class="barra"><span class="et">Ciudad Productiva</span><span class="pista"><span class="relleno" style="width:32%"></span></span><span class="v">16</span></div>
+      <div class="barra"><span class="et">Ciudad Inteligente</span><span class="pista"><span class="relleno" style="width:8%"></span></span><span class="v">4</span></div>
+      <div class="barra"><span class="et">Sin eje asignado</span><span class="pista"><span class="relleno" style="width:16%;background:var(--ambar)"></span></span><span class="v">8</span></div>
+      <div class="barra"><span class="et">Ciudad Metropolitana</span><span class="pista"></span><span class="v">0</span></div>
+    </div>
+    <p class="nota"><b>Ciudad Metropolitana no tiene ninguna tarea</b> y Ciudad Inteligente solo tiene
+      cuatro. Otras 8 tareas todavía no tienen eje asignado: se muestran aparte en vez de repartirlas,
+      para que la falta se vea.</p>
+
+    <h3>Las tareas de mayor prioridad hoy</h3>
+    <div class="tabla-scroll"><table>
+      <thead><tr><th>Código</th><th>Tarea</th><th class="num">Alcance/año</th><th class="num">Valoración</th></tr></thead>
+      <tbody>
+        <tr><td class="tnum">C005</td><td>Reprogramar el presupuesto para sostener el Pumakatari hasta fin de año</td><td class="num">150.000</td><td class="num">56.250</td></tr>
+        <tr><td class="tnum">C282</td><td>Evaluar y declarar la alerta roja municipal ante El Niño</td><td class="num">800.000</td><td class="num">40.000</td></tr>
+        <tr><td class="tnum">C016</td><td>Iniciar el cambio de luminarias a LED en la ciudad</td><td class="num">750.000</td><td class="num">30.000</td></tr>
+        <tr><td class="tnum">C107</td><td>Reformular e incrementar el presupuesto del Hospital La Paz</td><td class="num">100.000</td><td class="num">30.000</td></tr>
+      </tbody>
+    </table></div>
+    <p class="nota">La valoración combina a cuánta gente alcanza, cuánto le cambia la vida, qué tan
+      segura es la estimación y cuánto trabajo cuesta. Sirve para <b>ordenar</b>, no como nota: un
+      número alto significa mucho beneficio por poco esfuerzo.</p>
+  </section>
+
+  <!-- 4 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>El territorio</h2>
+    <p class="lead">271 de las 300 tareas están ubicadas en el mapa de la ciudad, agrupadas por
+      macrodistrito.</p>
+    <div class="barras">
+      <div class="barra"><span class="et">Centro</span><span class="pista"><span class="relleno" style="width:100%"></span></span><span class="v">94</span></div>
+      <div class="barra"><span class="et">Sur</span><span class="pista"><span class="relleno" style="width:47%"></span></span><span class="v">44</span></div>
+      <div class="barra"><span class="et">Cotahuma</span><span class="pista"><span class="relleno" style="width:45%"></span></span><span class="v">42</span></div>
+      <div class="barra"><span class="et">Max Paredes</span><span class="pista"><span class="relleno" style="width:44%"></span></span><span class="v">41</span></div>
+      <div class="barra"><span class="et">San Antonio</span><span class="pista"><span class="relleno" style="width:20%"></span></span><span class="v">19</span></div>
+      <div class="barra"><span class="et">Periférica</span><span class="pista"><span class="relleno" style="width:15%"></span></span><span class="v">14</span></div>
+      <div class="barra"><span class="et">Mallasa</span><span class="pista"><span class="relleno" style="width:15%"></span></span><span class="v">14</span></div>
+      <div class="barra"><span class="et">Hampaturi</span><span class="pista"><span class="relleno" style="width:3%"></span></span><span class="v">3</span></div>
+      <div class="barra"><span class="et">Sin ubicar</span><span class="pista"><span class="relleno" style="width:31%;background:var(--gris)"></span></span><span class="v">29</span></div>
+    </div>
+    <p class="nota"><b>El Centro concentra el doble que cualquier otro macrodistrito</b> y más de
+      treinta veces lo de Hampaturi. Puede reflejar dónde se concentran las visitas del Alcalde tanto
+      como dónde se concentran los problemas — pero es la primera vez que se puede ver y preguntar.</p>
+  </section>
+
+  <!-- 5 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Lo que falta: el POA</h2>
+    <blockquote class="cita">
+      Yo me temo que el POA está saliendo por un lado y lo estratégico saliendo por otro lado…
+      cuidado que el POA esté asignando presupuesto a tareas que para nosotros no priorizan.
+      <cite>Reunión del 5 de agosto</cite>
+    </blockquote>
+
+    <p class="lead">Esa preocupación era correcta, y <b>el sistema ya está preparado para responderla</b>
+      — pero necesita el dato del presupuesto, que hoy no tiene. Es la única pieza que falta para
+      cerrar el círculo entre lo que se planifica y lo que se financia.</p>
+
+    <div class="kpis">
+      <div class="kpi"><p class="n tnum">300</p><p class="k">Tareas priorizadas</p><p class="d">listo ✓</p></div>
+      <div class="kpi alerta"><p class="n tnum">0</p><p class="k">Con presupuesto</p><p class="d">falta el POA</p></div>
+      <div class="kpi"><p class="n tnum">29</p><p class="k">Proyectos de alta prioridad</p><p class="d">a contrastar con la plata</p></div>
+    </div>
+
+    <div class="pedido">
+      <h3>Lo que se necesita de piso 8</h3>
+      <ol>
+        <li><b>El export del POA</b> en planilla, con tres columnas mínimas: partida presupuestaria,
+          monto asignado, y a qué actividad o tarea corresponde.</li>
+        <li><b>La ejecución a la fecha</b>, si está disponible: cuánto de lo asignado ya se gastó.</li>
+      </ol>
+      <p class="nota" style="margin-top:14px"><b>Qué se desbloquea el mismo día que llegue.</b> El
+        sistema cruza automáticamente prioridad contra presupuesto y avisa de tres cosas: proyectos
+        <b>prioritarios que no tienen plata asignada</b>, plata asignada a proyectos <b>de baja
+        prioridad</b>, y proyectos <b>con presupuesto pero sin avance</b>. Son exactamente las tres
+        preguntas que se plantearon en la reunión.</p>
+    </div>
+  </section>
+
+  <!-- 6 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Hoja de ruta</h2>
+    <p class="lead">Cómo se construyó y qué queda. Las cuatro primeras etapas están cerradas.</p>
+
+    <div class="barras" style="padding:8px 18px">
+      <div class="fase"><span class="marca m-ok">✓</span><span>
+        <b>Fundaciones</b><span>La estructura de datos y la regla de cómo se calcula el avance.</span></span></div>
+      <div class="fase"><span class="marca m-ok">✓</span><span>
+        <b>Sistema en producción</b><span>Base de datos propia con el organigrama municipal completo: 163 unidades, 10 ejes.</span></span></div>
+      <div class="fase"><span class="marca m-ok">✓</span><span>
+        <b>Migración de datos</b><span>Los 300 compromisos pasados desde el sistema anterior, cada uno enlazado a su proyecto y programa.</span></span></div>
+      <div class="fase"><span class="marca m-ok">✓</span><span>
+        <b>El tablero y el cálculo de avance</b><span>Lo que Notion no permitía: el avance sube solo de la subtarea hasta el eje, ponderado por esfuerzo.</span></span></div>
+      <div class="fase"><span class="marca m-curso">→</span><span>
+        <b>Captura desde el terreno</b><span>Que lo que dice el Alcalde en una inspección se convierta en tarea y se enlace solo a su proyecto. En decisión: si entra por la aplicación de celular o por otra vía.</span></span></div>
+      <div class="fase"><span class="marca m-pend">5</span><span>
+        <b>Apagar el sistema anterior</b><span>Cuando el nuevo tenga todo, Notion queda como archivo histórico.</span></span></div>
+      <div class="fase"><span class="marca m-pend">6</span><span>
+        <b>Extender a toda la alcaldía</b><span>Secretaría por secretaría, después direcciones, y por último unidades — en el orden que se planteó en la reunión.</span></span></div>
+    </div>
+  </section>
+
+  <!-- 7 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Riesgos abiertos</h2>
+    <p class="lead">Lo que hoy limita al sistema, en orden de importancia.</p>
+
+    <div class="riesgo grave">
+      <p class="t">Nadie ha marcado nada todavía</p>
+      <p>Las 232 subtareas están sin empezar, así que el avance de todo el plan figura en 0%. No es
+        una falla: el sistema funciona y espera que las unidades empiecen a marcar. <b>Es el riesgo
+        principal</b>, y es el mismo que se planteó en la reunión: «el mayor problema de todo esto son
+        las personas… al no actualizar, no se actualiza el sistema y por ahí se pierde la tarea».</p>
+    </div>
+
+    <div class="riesgo grave">
+      <p class="t">302 de 386 proyectos no tienen actividades</p>
+      <p>El 78% de los proyectos son todavía un nombre en una lista, sin actividades ni tareas colgando.
+        Es el mismo hueco del 3% de la primera sección, visto desde el otro lado. Se cierra trabajando
+        secretaría por secretaría.</p>
+    </div>
+
+    <div class="riesgo">
+      <p class="t">El presupuesto no está en el sistema</p>
+      <p>Sin el POA no se puede responder «¿cuánta plata tiene esto y se está gastando bien?», que era
+        una de las preguntas centrales. Ver la sección anterior.</p>
+    </div>
+
+    <div class="riesgo">
+      <p class="t">Un eje sin ninguna tarea y ocho tareas sin eje</p>
+      <p>Ciudad Metropolitana no tiene tareas asociadas. Y 8 tareas no tienen eje asignado: se muestran
+        aparte a propósito, para que alguien decida a cuál corresponden en vez de repartirlas en silencio.</p>
+    </div>
+
+    <div class="riesgo">
+      <p class="t">Las valoraciones son una primera pasada</p>
+      <p>Los 300 puntajes de prioridad los propuso el sistema con supuestos explícitos, escritos uno por
+        uno. Sirven para ordenar desde hoy, pero deberían revisarse con cada secretaría: quien ejecuta
+        estima mejor que quien planifica.</p>
+    </div>
+  </section>
+
+  <!-- 8 ─────────────────────────────────────────────── -->
+  <section>
+    <h2>Propuesta abierta: el orden de los documentos</h2>
+    <blockquote class="cita">
+      Una carpeta madre que es organización… luego se divide cada una de las secretarías, cada una
+      de las direcciones, cada una de las unidades. Y solo los jefes de unidad tienen acceso a esa
+      carpeta, pero no a las direcciones.
+      <cite>Reunión del 5 de agosto</cite>
+    </blockquote>
+    <p class="lead">Esta parte <b>todavía no está implementada</b> y se deja planteada como decisión.
+      La idea es que el orden de las carpetas replique el organigrama, y que los permisos sigan la
+      jerarquía: cada quien ve lo suyo y el Despacho ve todo.</p>
+    <p class="nota">El sistema ya tiene los seis niveles de acceso definidos y el organigrama completo
+      cargado, así que puede reflejar esa estructura cuando se decida. Vale registrar el riesgo que
+      se señaló en la misma reunión: si el documento no se sube, el sistema no se entera — por eso
+      conviene que el archivo sea consecuencia de marcar la tarea, y no un paso separado que alguien
+      deba recordar.</p>
+  </section>
+
+  <footer class="pie">
+    <p><b>Sobre estas cifras.</b> Todas salen de consultar la base de datos del sistema el 7 de agosto
+      de 2026. No hay números cargados a mano ni estimaciones de escritorio: si una cifra cambia en el
+      sistema, cambia acá.</p>
+    <p><b>Trazabilidad interna.</b> Cada decisión de diseño mencionada está registrada en la bitácora
+      del proyecto, para quien necesite rastrearla: avance ponderado por esfuerzo <code>D06</code> ·
+      valoración de prioridad <code>D07</code> · subtareas como unidad de entrega <code>D18</code> ·
+      tareas que involucran varias secretarías <code>D19</code> · el eje se asigna por materia
+      <code>D20</code> · conciliación con el POA <code>D32</code>.</p>
+  </footer>
+
+</div>
+</div>

@@ -1,0 +1,113 @@
+{
+  "version": "v03",
+  "fecha": "2026-08-10",
+  "origen": "Portadas de gamlp-dashboards/CLAUDE_gamlp.md y de docs/Bitacora_de_decisiones_CMI.md. Cada una costó un error real en el sistema de compromisos; no se relajan por migrar de stack. v02 (10-ago): se agrega `declaracion_publica`, por corrección de César — las reglas heredadas asumían que todo compromiso nace de una instrucción interna, y eso dejaba fuera lo que el alcalde promete en público, que es justamente lo que NO está registrado en ningún lado. v03 (10-ago): se agrega `redaccion` — el formato de `descripcion` y la CITA TEXTUAL obligatoria, portados de gamlp-chat/lib/prompts.js. Pedido de César: «la descripción tiene que dar un contexto suficientemente largo para que se entienda» y «la cita textual del alcalde es como una sección que se saca de lo que dijo».",
+  "nota_de_uso": "FUENTE ÚNICA de las reglas de captura. El prompt las CITA, no las repite. Cambiar una regla se hace acá y sube la versión; `analisis_ia.reglas_version` registra con cuál se extrajo cada tarea.",
+  "principios": [
+    "La IA PROPONE, el humano DISPONE. Nada se escribe en base hasta que una persona confirma. Base: Ley 1178 — la IA no puede ser responsable de la función pública.",
+    "Lo dudoso se marca, no se inventa. Confianza baja → `verificar: true` y se dice por qué. Nunca rellenar un campo para que no quede vacío.",
+    "Vacío > equivocado. Una tarea sin responsable canta y alguien la reclama; con el responsable equivocado, no.",
+    "Fallar sin romper NO es fallar sin decir nada. Todo lo que se propuso y no se pudo resolver viaja en `avisos` y se muestra."
+  ],
+  "eje": {
+    "regla": "El eje se deriva por MATERIA del compromiso, NUNCA por la jerarquía de quien lo ejecuta.",
+    "por_que": "Una subalcaldía es QUIÉN ejecuta, no QUÉ eje mueve. Si el eje se heredara del organigrama, todo lo del Despacho caería en EJE-01 y ese eje se volvería un cajón de sastre que no mide nada.",
+    "referencia": "D20 (FIRME) · CLAUDE_gamlp.md §41 fichas con Ejes vacía",
+    "operativas": "Una tarea de funcionamiento interno que no mueve ningún eje del Plan va con eje `OP`. Pesa 0 en el avance, a propósito: no se mide, y por eso tampoco cuenta como no medida."
+  },
+  "responsable": {
+    "exacto_o_vacio": "El responsable debe casar EXACTO con una unidad real del MOF. Si el nombre no está en el catálogo, se deja VACÍO y se avisa. Nunca se aproxima.",
+    "secretarias_inventadas": "El modelo tiende a inventar secretarías. NO EXISTEN: «Secretaría de Salud», «de Planificación y Finanzas», «de Infraestructura Pública». Si no está exacto en el catálogo, no se escribe.",
+    "descentralizadas": {
+      "cuales": [
+        "EMAVERDE",
+        "EMAVIAS",
+        "SAMAPA",
+        "EDMC",
+        "Terminal",
+        "Maquinaria"
+      ],
+      "regla": "Solo pueden ir como APOYO, nunca como principal.",
+      "por_que": "No tienen titular cargado: el aviso no le llegaría a nadie."
+    },
+    "apoyo_distinto_de_principal": "Una unidad no se acompaña a sí misma. Si la sugerís como principal, no puede estar también en apoyos."
+  },
+  "multi_secretaria": {
+    "cuando": "Un compromiso ambicioso o transversal — un programa de ciudad o un evento que moviliza a varias secretarías. Ejemplo canónico: la verbena paceña (Culturas + Seguridad + Movilidad + Comunicación + Subalcaldía).",
+    "como": "Se marca `multi_secretaria: true` y se cargan TODAS las unidades que participan como apoyos. No hay límite: pueden ser 2, 5 o 20.",
+    "subtareas": "En un transversal las subtareas NO heredan ciegamente el principal: van a la unidad que EJECUTA cada una. Si una unidad figura como apoyo es porque HACE algo → debe tener al menos una subtarea a su nombre. Un apoyo con cero subtareas es señal de que no se distribuyó el trabajo.",
+    "senal_de_error": "Un compromiso de ciudad (mantenimiento de las 226 unidades educativas, seguridad vial escolar, la verbena) cargado con un solo responsable y sin la marca — casi siempre es un transversal mal cargado."
+  },
+  "que_vs_como": {
+    "regla": "«Contratar X PARA Y» → el compromiso es Y. Contratar X es una SUBTAREA.",
+    "por_que": "El medio nunca es el compromiso. Si se carga el medio, el compromiso se da por cumplido cuando se firmó el contrato y no cuando el vecino vio el resultado."
+  },
+  "declaracion_publica": {
+    "regla": "Lo que el Alcalde anuncia EN PÚBLICO —conferencia de prensa, informe de gestión, entrevista, acto— es un compromiso, aunque no le haya instruido a ninguna unidad.",
+    "por_que": "Corrección de César (10-ago): «se hacen declaraciones públicas que cuentan como compromisos y que probablemente no estén registrados». Una promesa pública obliga MÁS, no menos: la escuchó la ciudad. Y como no pasó por ninguna instrucción interna, es justo la que no figura en ningún sistema.",
+    "como_se_carga": "Igual que cualquier otro, con una diferencia: NO hay unidad instruida, así que el responsable se deriva por MATERIA contra el MOF, como el eje. Si no casa exacto, se deja vacío — no se aproxima.",
+    "plazo": "Casi nunca lo dice. Si no lo dijo, se propone y se marca `plazo_origen: propuesto`. No inventar un plazo porque «una promesa necesita fecha».",
+    "la_trampa": "En un informe de gestión el Alcalde REPASA lo ya hecho y lo ya comprometido. La mayoría de lo que suena a compromiso YA ESTÁ CAPTADO. Acá el cotejo de duplicados es lo más importante de todo: ante la duda, marcarlo como posible duplicado y que una persona decida, en vez de crear un compromiso que ya existe con otras palabras.",
+    "que_NO_es_compromiso": [
+      "Describir lo ya hecho: «hemos entregado 40 obras». Eso es un reporte, no un compromiso nuevo.",
+      "Opinar o valorar: «esta gestión es la más transparente».",
+      "Responder sobre la gestión anterior sin comprometer una acción propia.",
+      "Hablar de una intención sin objeto verificable: «vamos a trabajar por la ciudad»."
+    ],
+    "la_prueba": "¿Alguien podría venir en seis meses y decir «esto no se cumplió»? Si sí, es compromiso. Si no se puede verificar, no lo es."
+  },
+  "redaccion": {
+    "descripcion": {
+      "regla": "Da el CONTEXTO suficiente para entender QUÉ es y POR QUÉ, en lenguaje natural. Incluye el motivo o antecedente y PARA QUÉ. No la infles.",
+      "el_punto_medio": "NI fría e impersonal («No existe reglamento…»), NI relato tipo cuento («Durante la inspección, mientras recorría…»).",
+      "al_alcalde_una_vez": "Mencionalo UNA vez, cuando aporta —qué dispuso, observó, pospuso o se comprometió—, NO como fórmula de apertura. Variá la construcción: no arranques siempre con «El alcalde [verbo]».",
+      "modelo_a_replicar": "«El POA exclusivo de la Banda Municipal desapareció ('refundido') en la gestión anterior. El alcalde se comprometió a restituirlo tras revisar los reportes del corte de 60 días.»",
+      "audio_ruidoso": "La transcripción puede venir de un audio de MALA CALIDAD con palabras mal transcritas. Entendé la INTENCIÓN pese al ruido y corregí los typos obvios de términos conocidos: «paseña»→«paceña», «diabilidad»→«viabilidad», los nombres de secretarías y lugares del municipio. SOLO ortografía evidente e intención clara; no inventes ni cambies el contenido."
+    },
+    "antecedente": {
+      "regla": "CITA TEXTUAL y literal de lo que dijo el alcalde. OBLIGATORIA cuando la hubo.",
+      "verbatim": "NO se corrige. Ni la ortografía, ni el orden, ni se completa lo que quedó a medias. Va tal como se dijo.",
+      "por_que": "Es lo ÚNICO no interpretable de la tarea. La descripción la redacta el modelo; la cita dice qué se dijo, con esas palabras. Cuando dentro de un año alguien pregunte de dónde salió el compromiso, la respuesta no puede ser un resumen.",
+      "ojo": "`descripcion` SÍ se corrige (el audio viene ruidoso) y `antecedente` NO. Son dos campos con contratos distintos; mezclarlos arruina al segundo.",
+      "en_subtareas": "Cada subtarea lleva la suya si la hubo. Una subtarea marcada `dictada` sin cita es una contradicción: si se dictó, hay frase."
+    },
+    "subtareas_dictada_o_sugerida": {
+      "dictada": "La dijo el alcalde EXPLÍCITAMENTE. Nace activa.",
+      "sugerida": "La inferiste vos del contexto. Nace como propuesta y la confirma el despacho.",
+      "por_que": "Distingue lo que se comprometió de lo que el sistema propuso. Sin la marca, una inferencia del modelo se vuelve indistinguible de una instrucción del alcalde."
+    }
+  },
+  "plazo": {
+    "regla": "El plazo sale de lo que DIJO el alcalde. Si no lo dijo, se PROPONE por complejidad y se marca como propuesto.",
+    "prohibido": "NUNCA tomar el horizonte de un plan como plazo. El plan de pagos con EPSAS era a 4 años, pero el entregable era que volviera el agua el lunes 21-jul, no 2028.",
+    "subtareas": "El plazo de una subtarea nunca es posterior al de su tarea padre."
+  },
+  "subtareas": {
+    "default_del_alta": "Descomponer es PARTE del alta, no un paso posterior ni opcional. Si el compromiso tiene 2 o más entregables reales, las subtareas nacen en el mismo acto.",
+    "accion_unica": "Un compromiso de acción única va con CERO subtareas, a propósito — y hay que decirlo. Pero que TODO un lote salga sin subtareas es señal de error: casi siempre significa que no se evaluó la descomposición.",
+    "rango": "4 a 8 entregables como referencia. NO se rellena para llegar a 4: 2 o 3 reales es válido y preferible a inventar.",
+    "tres_pruebas": [
+      "Dueño único y REAL del catálogo MOF. Nunca un rol futuro («el consultor que se contratará»), nunca inventado. Hereda el principal del padre si no tiene uno propio.",
+      "Hecho o no hecho, sin discusión. PROHIBIDO redactar «coordinar…», «hacer seguimiento de…», «gestionar de manera integral…»: eso no se puede marcar. Escribí el ENTREGABLE — «Informe X entregado», «Convenio firmado», «20 luminarias instaladas».",
+      "Le importa al compromiso — es lo que el destinatario espera, no el «cómo» interno del responsable."
+    ],
+    "nunca_huerfana": "Una subtarea sin dueño no se puede reportar ni verificar. Si no resuelve dueño propio, hereda el del padre; si tampoco hay, se declara en `avisos`, no se calla."
+  },
+  "cotejo_de_duplicados": {
+    "consciente_del_lugar": "Falencias parecidas en hospitales o sitios DISTINTOS NO son duplicados: son tareas distintas (distinto edificio, distinto activo).",
+    "duplicado_real": "Solo cuando es el MISMO activo puntual (ese tomógrafo, esa donación) o un PROGRAMA DE CIUDAD único.",
+    "senal": "Si el título NO nombra el centro o el sitio → es programa de ciudad, una sola tarea. Si nombra el sitio o es un activo puntual → es específico, tarea propia aunque se parezca a otra.",
+    "ante_duplicado": "ENRIQUECER la tarea existente con la cita, fecha y contexto nuevos. NUNCA crear otra. El registro histórico se acumula, no se clona."
+  },
+  "lugar_y_coordenadas": {
+    "un_solo_lugar": "`lugar_captura` debe ser UN lugar geocodificable («Hospital Municipal La Portada, La Paz»), nunca un string compuesto con «/» o «–». Un compuesto da dos ubicaciones y el geocodificador pincha mal.",
+    "nunca_de_memoria": "El modelo NUNCA inventa coordenadas. Se geocodifica o se confirma con una persona.",
+    "homonimos_rurales": "Nominatim devuelve homónimos rurales para barrios de La Paz (Achumani → Sapahaqui/Loayza). Exigir «Nuestra Señora de La Paz / Murillo» en el resultado.",
+    "solo_si_es_terreno": "Se geolocaliza solo si el evento es de terreno: visita, recorrido, inspección."
+  },
+  "encaje": {
+    "regla": "Toda tarea cuelga de un PROYECTO del Plan. Una tarea sin proyecto no entra en ningún avance, ningún RICE y ningún semáforo — es invisible.",
+    "propone_no_inventa": "Si ninguno de los proyectos del catálogo encaja con confianza, decilo (`confianza: baja`) y explicá por qué. Es preferible que la persona elija a que el sistema adivine.",
+    "por_materia": "El proyecto se elige por la MATERIA de la tarea, igual que el eje — no por qué unidad la ejecuta."
+  }
+}
