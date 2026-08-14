@@ -1915,6 +1915,16 @@ el modal quedó igual). Y `scripts/aplicar_migracion.py` para aplicar cualquier 
 comando —transacción única, `--revisar`, `--estado`—, porque *«no tengo idea cómo correr esto»*.
 Su bug del symlink `/tmp` → `/private/tmp` está documentado en el propio script.
 
+**7 · El proyecto ya es un repositorio git** (14-ago). Commit inicial `f2b9781`, **119 archivos**.
+Antes de commitear se verificó el índice: **0 archivos de `secretos/`**, ningún `.env`, ningún token.
+El `.gitignore` de la raíz ya estaba escrito de antes anticipando este momento —dice que `secretos/`
+entraría al primer commit y que después «no alcanza con borrarlo: queda en la historia»—, así que
+protegió solo. `docs/Guia_crear_accesos.md` sí entró, pero contiene **instrucciones y placeholders**
+(`TU_PASSWORD`, `[YOUR-PASSWORD]`), no credenciales.
+
+> **No hay remoto ni push**, por la regla del proyecto. Si se agrega uno, revisar antes que siga sin
+> haber secretos: `git ls-files | grep -c '^secretos/'` debe dar **0**.
+
 ---
 
 ## Lo siguiente: el apartado de trabajo (pedido de César, 14-ago)
