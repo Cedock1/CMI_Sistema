@@ -64,7 +64,23 @@ export async function geocodificar(lugar: string | null | undefined): Promise<Ub
   const corto = partes[0].replace(/^(zona|barrio|urbanizaci[oó]n)\s+/i, '').trim();
   if (corto && corto !== partes[0]) variantes.push(conCiudad(corto));
 
-  for (const v of variantes) {
+  // Y al final las grafías J↔H, que en los topónimos aymaras castellanizados se usan
+  // indistintamente: «Cancha Venus, PampaJasí» no resuelve y «PampaHasi» sí. Van ÚLTIMAS
+  // porque primero se intenta con lo que literalmente dice el dato.
+  // Mismo criterio que `scripts/corregir_coordenadas.py` — los dos lados tienen que
+  // geocodificar igual, o la app y el script ubican distinto la misma tarea.
+  const otraGrafia = (t: string) => [
+    t.replace(/j/g, 'h').replace(/J/g, 'H'),
+    t.replace(/h/g, 'j').replace(/H/g, 'J'),
+  ].filter((x) => x !== t);
+  [...variantes].forEach((v) => {
+    const sinPais = v.replace(/, Bolivia$/, '');
+    otraGrafia(sinPais).forEach((g) => variantes.push(`${g}, Bolivia`));
+  });
+
+  // Sin repetir, conservando el orden de preferencia: cada variante duplicada cuesta 1,1 s
+  // de espera a Nominatim, que es el límite del servicio público.
+  for (const v of [...new Set(variantes)]) {
     try {
       for (const r of await nominatim(v)) {
         const nombre = String(r.display_name || '');

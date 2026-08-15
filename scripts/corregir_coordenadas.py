@@ -17,9 +17,18 @@ LA REGLA
     Y no se inventan coordenadas: si ningún resultado pasa la verificación, la tarea
     se reporta para que una persona confirme el pin. Vale más sin ubicar que mal ubicada.
 
+LO QUE ESTA DETECCIÓN NO VE, Y POR ESO EXISTE `--tareas`
+    Detectar "fuera del municipio" solo encuentra los homónimos LEJANOS. Una coordenada
+    puede estar dentro de la caja y aun así estar mal: C161–C163 («Cancha Venus,
+    Pampajasí») estaban a 12,4 km de Pampahasi, al oeste en vez de al este, y pasaban
+    la verificación sin problema. Ese tipo de error no se detecta solo — lo encontró
+    una persona mirando el mapa. Con `--tareas` se re-verifican códigos puntuales
+    contra el geocodificador, con las mismas reglas.
+
 Uso:
-    python scripts/corregir_coordenadas.py              # solo diagnostica
-    python scripts/corregir_coordenadas.py --aplicar    # escribe las que verificó
+    python scripts/corregir_coordenadas.py                        # diagnostica las de fuera
+    python scripts/corregir_coordenadas.py --aplicar              # escribe las que verificó
+    python scripts/corregir_coordenadas.py --tareas C161,C162     # re-verifica esas, estén donde estén
 """
 import json
 import math
@@ -65,6 +74,34 @@ def nominatim(consulta):
         return json.loads(r.read())
 
 
+def con_ciudad(t):
+    """Agrega la ciudad solo si el texto no la trae ya.
+
+    Portado de `src/lib/cmi/geocodificar.ts` (arreglo del 10-ago): «Calle X, Zona Y, La Paz»
+    se convertía en «…, La Paz, La Paz, Bolivia» y Nominatim devolvía CERO resultados. Pasó
+    con la calle Antonio Gallardo y los 7 compromisos quedaron sin pin. Este script se había
+    quedado sin el arreglo — la divergencia .ts/.py es un problema conocido del proyecto.
+    """
+    import re
+    return f"{t}, Bolivia" if re.search(r"\bla\s*paz\b", t, re.I) else f"{t}, La Paz, Bolivia"
+
+
+def variantes_grafia(t):
+    """Intercambia J↔H, que es la confusión sistemática de los topónimos aymaras.
+
+    El caso que lo motivó: «Cancha Venus, PampaJasí» no resuelve, pero «PampaHasi» sí —y el
+    homónimo existe con la otra grafía: buscar «Pampahasi» devuelve primero `Pampajasi,
+    Municipio Yaco, Provincia Loayza`, a 90 km—. La misma confusión afecta a la lista de
+    palabras clave de `geo.ts`, que también quedó con una sola grafía.
+    """
+    out = []
+    for a, b in (("j", "h"), ("h", "j")):
+        alt = t.replace(a, b).replace(a.upper(), b.upper())
+        if alt != t:
+            out.append(alt)
+    return out
+
+
 def geocodificar(lugar):
     """Devuelve (lat, lon, display_name) del primer resultado VERIFICADO, o None.
 
@@ -73,13 +110,31 @@ def geocodificar(lugar):
     """
     base = lugar.split("(")[0].split("distrito")[0].strip(" ,/")
     partes = [x.strip() for x in base.split("/") if x.strip()]
-    variantes = []
-    for parte in partes:
-        variantes.append(f"{parte}, La Paz, Bolivia")
-    if len(partes) > 1:
-        variantes.insert(0, f"{partes[0]}, {partes[1]}, La Paz, Bolivia")
+    if not partes:
+        return None
 
+    variantes = []
+    if len(partes) > 1:
+        variantes.append(con_ciudad(f"{partes[0]}, {partes[1]}"))
+    for parte in partes:
+        variantes.append(con_ciudad(parte))
+    # Última chance: el primer tramo sin los calificativos que suelen sobrar. Un lugar más
+    # corto casa más seguido que uno muy descrito.
+    import re as _re
+    corto = _re.sub(r"^(zona|barrio|urbanizaci[oó]n)\s+", "", partes[0], flags=_re.I).strip()
+    if corto and corto != partes[0]:
+        variantes.append(con_ciudad(corto))
+    # Y recién al final las grafías alternativas: primero se intenta con lo que dice el dato.
+    for v in list(variantes):
+        variantes.extend(con_ciudad(g) for g in variantes_grafia(v.rsplit(", Bolivia", 1)[0]))
+
+    # Sin repetir, conservando el orden de preferencia.
+    vistas, orden = set(), []
     for v in variantes:
+        if v not in vistas:
+            vistas.add(v); orden.append(v)
+
+    for v in orden:
         try:
             for r in nominatim(v):
                 nombre = r["display_name"]
@@ -94,8 +149,19 @@ def geocodificar(lugar):
     return None
 
 
+def codigos_pedidos(argv):
+    """Lee `--tareas C161,C162` y devuelve la lista, o None si no se pidió."""
+    if "--tareas" not in argv:
+        return None
+    i = argv.index("--tareas")
+    if i + 1 >= len(argv):
+        sys.exit("ERROR: --tareas necesita una lista, por ejemplo: --tareas C161,C162")
+    return [c.strip().upper() for c in argv[i + 1].split(",") if c.strip()]
+
+
 def main():
     aplicar = "--aplicar" in sys.argv
+    pedidos = codigos_pedidos(sys.argv)
     con = u.conectar()
     cur = con.cursor()
     cur.execute("""select codigo, titulo, lugar_captura,
@@ -105,12 +171,22 @@ def main():
                    where coordenadas ~ '^-?[0-9.]+,-?[0-9.]+$' order by codigo""")
     filas = cur.fetchall()
 
-    malas = [f for f in filas if fuera(f[3], f[4])]
     print(f"Tareas con coordenadas: {len(filas)}")
-    print(f"Fuera del municipio:    {len(malas)}\n")
-    if not malas:
-        print("Ninguna coordenada fuera de rango. Nada que corregir.")
-        cur.close(); con.close(); return
+    if pedidos:
+        malas = [f for f in filas if f[0].upper() in pedidos]
+        faltan = set(pedidos) - {f[0].upper() for f in malas}
+        print(f"Pedidas por código:     {len(malas)}"
+              + (f"   ⚠ sin coordenada o inexistentes: {', '.join(sorted(faltan))}" if faltan else ""))
+        print()
+        if not malas:
+            print("Ninguno de esos códigos tiene coordenada que revisar.")
+            cur.close(); con.close(); return
+    else:
+        malas = [f for f in filas if fuera(f[3], f[4])]
+        print(f"Fuera del municipio:    {len(malas)}\n")
+        if not malas:
+            print("Ninguna coordenada fuera de rango. Nada que corregir.")
+            cur.close(); con.close(); return
 
     corregidas, sin_resolver = [], []
     for cod, tit, lugar, lat, lon in malas:
@@ -144,11 +220,14 @@ def main():
         for cod, nlat, nlon, nombre, consulta in corregidas:
             cur.execute("update cmi.tarea set coordenadas = %s where codigo = %s",
                         (f"{nlat},{nlon}", cod))
+            motivo = ("Re-verificación pedida por código (la coordenada estaba dentro del "
+                      "municipio pero en el lugar equivocado)" if pedidos
+                      else "Homónimo rural corregido")
             cur.execute(
                 "insert into cmi.bitacora (entidad, entidad_id, accion, usuario, justificacion) "
                 "values (%s,%s,%s,%s,%s)",
                 ("tarea", cod, "corregir_coordenada", "script",
-                 f"Homónimo rural corregido vía Nominatim, verificado contra "
+                 f"{motivo}. Vía Nominatim «{consulta}», verificado contra "
                  f"«Nuestra Señora de La Paz / Murillo»: {nombre[:150]}"))
         con.commit()
         print(f"\n  ✓ {len(corregidas)} coordenadas corregidas · registrado en cmi.bitacora")

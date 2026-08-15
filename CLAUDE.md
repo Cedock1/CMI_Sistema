@@ -2159,12 +2159,53 @@ al deseleccionar. Dos defectos de dibujo se corrigieron mirando el render, no el
 Zongo se superponía a su rótulo, y el recuadro tapaba la etiqueta «Hampaturi» —quedaba un «ur»
 asomando—, que ahora se corre a la izquierda.
 
-> ### Lo que el encuadre destapó y NO se tocó: C161–C163
-> «Cancha Venus, **Pampajasí**» está guardada a **12,4 km** de Pampahasi, al oeste en vez de al este.
-> Es el punto aislado que estira el mapa hacia la izquierda. Tiene una causa concreta: `geo.ts` busca
-> la palabra clave `pampahasi` y el lugar dice **«Pampajasí» con jota**, así que no casa y el
-> macrodistrito se asignó por cercanía a una coordenada que ya estaba mal. Es el patrón del homónimo
-> que el proyecto ya documentó en agosto. Corregirlo es decisión de César: son datos.
+---
+
+### 15-ago · C161–C163 y la grafía J↔H — el error que nadie podía detectar
+
+El encuadre del mapa destapó tres tareas mal ubicadas y César pidió corregirlas. **La causa no era
+una sola coordenada: era una regla de comparación.**
+
+**El diagnóstico.** «Cancha Venus, **Pampajasí**» estaba guardada a **12,4 km** de Pampahasi, al
+oeste en vez de al este. Dos cosas fallaron a la vez:
+
+1. `geo.ts` buscaba la clave `pampahasi` y el lugar dice **«Pampajasí» con jota** → no casó, así
+   que el macrodistrito se resolvió por **cercanía a una coordenada que ya estaba mal**.
+2. El geocodificador tampoco resolvía «Pampajasí», así que la coordenada se había fijado sabe dios
+   de dónde.
+
+> **Y el homónimo apareció con nombre y apellido:** buscar «Pampahasi» en Nominatim devuelve
+> **primero** `Pampajasi, Municipio Yaco, Provincia Loayza` — a 90 km. Existe un lugar escrito
+> literalmente con jota en otro municipio. Es el patrón Callapa otra vez, y la razón por la que el
+> sello «Nuestra Señora de La Paz / Murillo» no es opcional.
+
+**Coordenada corregida a `-16.5012202,-68.102366`**, verificada contra *«Venus, Calle 9, Pampahasi,
+San Antonio, Municipio Nuestra Señora de La Paz»*. Se aplicó con la ruta real —el script, no un
+UPDATE a mano— y quedó en `cmi.bitacora` con la consulta que la resolvió.
+
+**Efecto medido:** Cotahuma **49 → 46** y San Antonio **19 → 22** (las tres se movieron al
+macrodistrito correcto), y el ancho del mapa bajó de **18,9 a 14,4 km**, así que el encuadre ganó
+resolución de paso.
+
+#### Los tres arreglos de fondo, que valen más que las tres tareas
+
+| Dónde | Qué |
+|---|---|
+| `app/src/lib/cmi/geo.ts` | `na()` **unifica J y H** al normalizar. Así cualquier clave casa con las dos grafías **sin escribir variantes a mano** — inventar topónimos sería justo lo que este proyecto no hace |
+| `scripts/corregir_coordenadas.py` | `--tareas C161,C162` para **re-verificar códigos puntuales**. La detección vieja solo veía lo que caía FUERA del municipio, y este error estaba adentro: no lo encontró una alerta, lo encontró una persona mirando el mapa |
+| `geocodificar.ts` **y** el `.py` | los dos prueban ahora las grafías alternativas, y el `.py` recibió los arreglos que solo tenía el `.ts` (no duplicar «La Paz», variante corta) |
+
+> ### El error que casi cometo, y que atrapó la prueba
+> Unificar J y H rompía en silencio las claves que **ya llevaban jota** —`chijini`—, porque el
+> lugar quedaba normalizado y la clave no. Comparar un lado normalizado contra el otro crudo es el
+> error clásico de este tipo de arreglo. Corregido (`l.includes(na(k))`) y **cubierto por
+> `app/pruebas/macrodistrito.ts`**, 10 casos, `npx tsx pruebas/macrodistrito.ts`. Los 14 de
+> `lugar_sugerido.ts` siguen pasando.
+
+> **El `.py` se había quedado atrás del `.ts`, otra vez.** Los arreglos del 10-ago —no duplicar la
+> ciudad, variante corta— vivían solo en el TypeScript. Es la misma divergencia que ya causó
+> problemas con los triggers y el `search_path`: **cuando dos lados tienen que hacer lo mismo, hay
+> que tocar los dos.**
 
 ---
 
@@ -2233,10 +2274,12 @@ las 43 tareas nuevas llevan escrito `modelo: (leído en conversación, sin API)`
 5e. **C207, C208 y C209 tienen a EDMC (descentralizada) como responsable principal**, lo que el
    trigger de la 0007 prohíbe. Heredadas de Notion, anteriores a la guarda. Por la regla, EDMC
    debería acompañar y el principal ser una unidad del MOF.
-5f. **C161–C163 («Cancha Venus, Pampajasí») están a 12,4 km de Pampahasi**, al oeste en vez de al
-   este. Además `geo.ts` busca `pampahasi` y el lugar dice «Pampajasí» con jota, así que el
-   macrodistrito tampoco salió de la palabra clave sino de la coordenada mala. Son dos arreglos
-   distintos: la coordenada (dato) y la variante de la palabra clave (código).
+5f. ~~C161–C163 mal ubicadas~~ → **CORREGIDO el 15-ago** (ver la entrada de ese día). Queda lo que
+   destapó: **el error no lo encontró ninguna alerta, lo vio una persona mirando el mapa**. Una
+   coordenada dentro del municipio pero en el lugar equivocado no dispara nada. Con
+   `corregir_coordenadas.py --tareas` se puede re-verificar cualquier código; **barrer las 314
+   contra el geocodificador tomaría ~6 min de Nominatim y encontraría los demás casos de este
+   tipo** — no se hizo porque no se pidió.
 5g. **Los límites de los macrodistritos no existen en ningún lado descargable** (verificado el
    15-ago en el atlas del GAMLP, `datos.gob.bo` y OpenStreetMap). Si se quiere el mapa con
    fronteras reales, hay que pedir el shapefile a Catastro o al SIT del GAMLP.
