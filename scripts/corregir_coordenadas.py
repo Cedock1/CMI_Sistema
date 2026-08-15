@@ -25,10 +25,19 @@ LO QUE ESTA DETECCIÓN NO VE, Y POR ESO EXISTE `--tareas`
     una persona mirando el mapa. Con `--tareas` se re-verifican códigos puntuales
     contra el geocodificador, con las mismas reglas.
 
+EL BARRIDO (`--auditar`)
+    Re-geocodifica TODOS los lugares y compara contra lo guardado. Agrupa por
+    `lugar_captura`, así que son ~76 consultas y no 314: las tareas comparten lugar.
+    Es SOLO LECTURA — deja la propuesta en `secretos/coordenadas_auditoria.json` para
+    revisarla, porque una diferencia no significa que lo guardado esté mal: puede haber
+    dos entradas válidas del mismo sitio, o el pin puede haber salido de la agenda del
+    Alcalde y no del geocodificador. Lo decide una persona.
+
 Uso:
     python scripts/corregir_coordenadas.py                        # diagnostica las de fuera
     python scripts/corregir_coordenadas.py --aplicar              # escribe las que verificó
     python scripts/corregir_coordenadas.py --tareas C161,C162     # re-verifica esas, estén donde estén
+    python scripts/corregir_coordenadas.py --auditar              # barrido completo, sin escribir
 """
 import json
 import math
@@ -159,11 +168,102 @@ def codigos_pedidos(argv):
     return [c.strip().upper() for c in argv[i + 1].split(",") if c.strip()]
 
 
+# A partir de cuánto una diferencia deja de ser "la otra entrada del mismo sitio" y pasa a ser
+# otro lugar. Un portón y su patio pueden estar a 300 m; Pampahasi y el punto que tenía C161
+# estaban a 12,4 km. El corte es generoso a propósito: se prefiere revisar de más.
+UMBRAL_KM = 1.0
+
+
+def km_entre(la1, lo1, la2, lo2):
+    return math.hypot((la1 - la2) * 110.6, (lo1 - lo2) * 106.7)
+
+
+def auditar(cur):
+    """Re-geocodifica todos los lugares y reporta las diferencias. NO escribe en la base."""
+    cur.execute("""select coalesce(lugar_captura,''), coordenadas, array_agg(codigo order by codigo)
+                   from cmi.tarea
+                   where coordenadas ~ '^-?[0-9.]+,-?[0-9.]+$'
+                   group by 1, 2 order by count(*) desc""")
+    grupos = cur.fetchall()
+    print(f"Lugares distintos a verificar: {len(grupos)}"
+          f"  ({sum(len(g[2]) for g in grupos)} tareas)\n")
+
+    difieren, coinciden, sin_verificar = [], [], []
+    for i, (lugar, coord, codigos) in enumerate(grupos, 1):
+        lat, lon = [float(x) for x in coord.split(",")]
+        etiqueta = (lugar or "(sin lugar)")[:58]
+        print(f"[{i:>2}/{len(grupos)}] {etiqueta}", flush=True)
+        if not lugar:
+            # Sin texto de lugar no hay contra qué contrastar. No es un error: la coordenada
+            # pudo venir de la agenda del Alcalde, que responde "dónde estuvo" y no "qué dice
+            # el texto". Se reporta como no verificable, no como mala.
+            sin_verificar.append({"lugar": lugar, "coord": coord, "codigos": codigos,
+                                  "motivo": "la tarea no declara lugar"})
+            print("        · sin lugar declarado — no hay contra qué contrastar")
+            continue
+
+        r = geocodificar(lugar)
+        if not r:
+            sin_verificar.append({"lugar": lugar, "coord": coord, "codigos": codigos,
+                                  "motivo": "ningún resultado pasó la verificación"})
+            print("        · no verifica — la guardada NO se toca (puede venir de la agenda)")
+            continue
+
+        nlat, nlon, nombre, consulta = r
+        d = km_entre(lat, lon, nlat, nlon)
+        registro = {"lugar": lugar, "codigos": codigos, "km": round(d, 2),
+                    "guardada": coord, "propuesta": f"{nlat},{nlon}",
+                    "nominatim": nombre, "consulta": consulta}
+        if d >= UMBRAL_KM:
+            difieren.append(registro)
+            print(f"        ⚠ {d:.1f} km de diferencia · {len(codigos)} tareas · {codigos[0]}…")
+            print(f"          {nombre[:86]}")
+        else:
+            coinciden.append(registro)
+            print(f"        ✓ coincide ({d*1000:.0f} m)")
+
+    difieren.sort(key=lambda x: -x["km"])
+    print("\n" + "=" * 72)
+    print(f"COINCIDEN (< {UMBRAL_KM} km) : {len(coinciden):>3} lugares"
+          f" · {sum(len(x['codigos']) for x in coinciden):>3} tareas")
+    print(f"DIFIEREN                : {len(difieren):>3} lugares"
+          f" · {sum(len(x['codigos']) for x in difieren):>3} tareas")
+    print(f"NO VERIFICAN            : {len(sin_verificar):>3} lugares"
+          f" · {sum(len(x['codigos']) for x in sin_verificar):>3} tareas")
+
+    if difieren:
+        print("\nDiferencias, de mayor a menor:")
+        for x in difieren:
+            print(f"\n  {x['km']:>6.1f} km · {len(x['codigos'])} tareas · {', '.join(x['codigos'][:6])}"
+                  + (" …" if len(x["codigos"]) > 6 else ""))
+            print(f"          lugar    : {x['lugar'][:88]}")
+            print(f"          guardada : {x['guardada']}")
+            print(f"          propuesta: {x['propuesta']}")
+            print(f"          nominatim: {x['nominatim'][:88]}")
+
+    salida = Path(__file__).resolve().parent.parent / "secretos" / "coordenadas_auditoria.json"
+    salida.write_text(json.dumps(
+        {"umbral_km": UMBRAL_KM, "difieren": difieren,
+         "sin_verificar": sin_verificar, "coinciden": coinciden},
+        ensure_ascii=False, indent=2), encoding="utf-8")
+    salida.chmod(0o600)
+    print(f"\nPropuesta guardada en {salida}")
+    print("NO se escribió nada en la base. Para corregir un caso revisado:")
+    print("  python scripts/corregir_coordenadas.py --tareas C161,C162 --aplicar")
+
+
 def main():
     aplicar = "--aplicar" in sys.argv
     pedidos = codigos_pedidos(sys.argv)
     con = u.conectar()
     cur = con.cursor()
+
+    if "--auditar" in sys.argv:
+        # Barrido de solo lectura. Va antes que todo lo demás para que no haya forma de
+        # combinarlo con `--aplicar` por accidente.
+        auditar(cur)
+        cur.close(); con.close(); return
+
     cur.execute("""select codigo, titulo, lugar_captura,
                           split_part(coordenadas,',',1)::float,
                           split_part(coordenadas,',',2)::float
