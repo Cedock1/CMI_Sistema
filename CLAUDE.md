@@ -1932,8 +1932,40 @@ entraría al primer commit y que después «no alcanza con borrarlo: queda en la
 protegió solo. `docs/Guia_crear_accesos.md` sí entró, pero contiene **instrucciones y placeholders**
 (`TU_PASSWORD`, `[YOUR-PASSWORD]`), no credenciales.
 
-> **No hay remoto ni push**, por la regla del proyecto. Si se agrega uno, revisar antes que siga sin
-> haber secretos: `git ls-files | grep -c '^secretos/'` debe dar **0**.
+> ~~**No hay remoto ni push**~~ → **hay remoto público desde el 15-ago**: ver la entrada de ese día.
+
+---
+
+### 15-ago · El repositorio se publica · `github.com/Cedock1/CMI_Sistema`
+
+Decisión de César: *«commitea y pushea, debería ser una constante eso»*, y con visibilidad
+**pública** elegida sabiendo qué contiene. Quedó como convención del proyecto: commitear y pushear
+al cerrar cada bloque, sin preguntar. **Solo acá** — los demás proyectos siguen con la regla de
+pedido explícito.
+
+**Qué se revisó antes de publicar, porque publicar no se deshace.** No alcanzaba con mirar el estado
+actual: lo que entró en el primer commit sigue en el historial aunque después se borre.
+
+| Chequeo | Resultado |
+|---|---|
+| Archivos de `secretos/` en el índice | **0** ✓ |
+| Credenciales en **todo** el historial (`eyJ…`, `sk-ant-…`, `ghp_…`, URLs con contraseña) | **ninguna** ✓ — los dos hits son placeholders: `<CLAVE>` y `TU_PASSWORD` |
+| Datos personales | **se encontró uno y se sacó**: el CI y el ítem de Willam habían entrado al CLAUDE.md el 14-ago |
+
+> **Lo que sí queda visible y es aceptable:** el project ref de Supabase y el host del pooler, más la
+> URL de producción de Vercel. **No son secretos**: viajan en cada request del navegador de cualquier
+> usuario de la app. La contraseña de la base no está en el repo, y `anon` no tiene permisos sobre
+> `cmi` — el navegador nunca toca la base, todo pasa por `/api/cmi/*` con `service_role` del lado del
+> servidor.
+
+> **Lo que sí queda expuesto y fue una decisión, no un descuido:** nombres, cargos y correos de los
+> cuatro funcionarios dados de alta; las citas textuales del Alcalde; los 434 compromisos con plazos
+> y responsables; y la bitácora de decisiones completa, incluido lo que se descartó y por qué. Se le
+> advirtió a César antes de crear el repo y eligió público igual.
+
+**La consecuencia práctica para las próximas sesiones** está en **Convenciones** (la 🌐): en un
+archivo versionado **nunca** van CI, teléfono, fecha de nacimiento ni dirección. Es la misma elección
+que el esquema ya había hecho para `cmi.persona`, extendida a la documentación.
 
 ---
 
@@ -2234,7 +2266,21 @@ python3 -m venv /tmp/pgvenv && /tmp/pgvenv/bin/pip install pg8000
     principal, una descentralizada, una fecha en formato malo). **Lo único que exige API de
     verdad es comprobar qué devuelve el MODELO**, no qué hace el sistema con eso.
 - **Español neutro y tuteo**, también en comentarios de código y en los `.sql`.
-- **No commitear ni pushear sin pedido explícito.**
+- 📤 **Commitear y pushear al cerrar cada bloque de trabajo — sin preguntar.** Pedido de César
+  (15-ago): *«debería ser una constante eso»*. **Reemplaza** la regla anterior («no commitear ni
+  pushear sin pedido explícito»), que vale igual para los demás proyectos: acá no.
+  · Va junto con la entrada del CLAUDE.md, no en vez de ella: el commit cuenta *qué* cambió, la
+    bitácora *por qué*.
+  · **Antes de cada `git add -A`:** `git ls-files | grep -c '^secretos/'` debe dar **0**.
+- 🌐 **El repositorio es PÚBLICO** (`github.com/Cedock1/CMI_Sistema`, decisión de César del 15-ago).
+  Eso cambia el estándar de lo que puede entrar a un archivo versionado:
+  · **Nunca datos personales**: CI, teléfono, fecha de nacimiento, dirección. Es la misma elección
+    que ya había hecho el esquema —`cmi.persona` guarda solo nombre, unidad, cargo y correo (10-ago:
+    *«el esquema hizo esa elección antes y conviene respetarla, no ampliarla»*)—, ahora extendida a
+    la documentación. **Pasó el 14-ago**: el CI y el ítem de Willam entraron al CLAUDE.md y se
+    sacaron antes del primer push. Su lugar es `secretos/usuarios_cmi.md`.
+  · Nombres, cargos, siglas y correos institucionales **sí** van: son la estructura del sistema.
+  · Lo que se publica **no se recupera**: borrarlo después lo deja en el historial y en las cachés.
 - Diagnóstico con evidencia antes que solución.
 - Toda decisión de fondo se escribe **primero** en `docs/Bitacora_de_decisiones_CMI.md` y recién
   después se ejecuta.
