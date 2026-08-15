@@ -13,7 +13,21 @@ import {
   enlaceRespaldo, fechaCorta, HECHA, type Subtarea,
 } from '@/lib/cmi/tablero';
 
-export type DatosMarca = { nota: string; archivo?: File | null };
+export type DatosMarca = {
+  nota: string;
+  archivo?: File | null;
+  enlace?: string;
+  // Solo cuando no hay ni archivo ni enlace: por qué esta subtarea no produce documento.
+  sinDocumentoMotivo?: string;
+};
+
+// Mínimo del motivo, igual que el CHECK de la base y la ruta. Está acá para que el
+// botón se habilite exactamente cuando el servidor va a aceptar, y no un carácter antes.
+const MOTIVO_MIN = 10;
+
+// Cómo se respalda lo que se marca (D56.4). El respaldo es obligatorio; la tercera
+// opción es la excepción declarada, que no se puede tomar sin escribir por qué.
+type Respaldo = 'archivo' | 'enlace' | 'sin';
 
 export default function SubtareaFila({ s, guardando, onMarcar, compacta }: {
   s: Subtarea;
@@ -28,18 +42,43 @@ export default function SubtareaFila({ s, guardando, onMarcar, compacta }: {
   const [abierto, setAbierto] = useState(false);
   const [nota, setNota] = useState('');
   const [archivo, setArchivo] = useState<File | null>(null);
+  const [enlace, setEnlace] = useState('');
+  const [motivo, setMotivo] = useState('');
+  const [respaldo, setRespaldo] = useState<Respaldo>('archivo');
   const inputArchivo = useRef<HTMLInputElement>(null);
 
+  // Qué falta para poder confirmar. Devolver el motivo —y no un booleano— permite
+  // decirlo en pantalla: un botón gris que no explica por qué se lee como un error.
+  const falta: string | null =
+    nota.trim().length < 3 ? 'Falta decir qué quedó hecho.'
+    : respaldo === 'archivo' && !archivo ? 'Falta adjuntar el archivo de respaldo.'
+    : respaldo === 'enlace' && !enlace.trim() ? 'Falta pegar el enlace del respaldo.'
+    : respaldo === 'sin' && motivo.trim().length < MOTIVO_MIN
+      ? 'Explicá en una frase por qué no hay documento.'
+    : null;
+
+  function limpiar() {
+    setAbierto(false); setNota(''); setArchivo(null); setEnlace('');
+    setMotivo(''); setRespaldo('archivo');
+    if (inputArchivo.current) inputArchivo.current.value = '';
+  }
+
   function alPulsar() {
-    // Desmarcar es directo. Marcar abre el formulario: la nota es obligatoria.
+    // Desmarcar es directo. Marcar abre el formulario: hay que decir qué quedó hecho
+    // y con qué se respalda.
     if (hecha) { onMarcar(s); return; }
     setAbierto(true);
   }
 
   function confirmar() {
-    if (nota.trim().length < 3) return;
-    onMarcar(s, { nota: nota.trim(), archivo });
-    setAbierto(false); setNota(''); setArchivo(null);
+    if (falta) return;
+    onMarcar(s, {
+      nota: nota.trim(),
+      archivo: respaldo === 'archivo' ? archivo : null,
+      enlace: respaldo === 'enlace' ? enlace.trim() : undefined,
+      sinDocumentoMotivo: respaldo === 'sin' ? motivo.trim() : undefined,
+    });
+    limpiar();
   }
 
   async function abrirRespaldo() {
@@ -87,6 +126,13 @@ export default function SubtareaFila({ s, guardando, onMarcar, compacta }: {
               {s.entregable.archivo_nombre || 'respaldo'}
             </button>
           )}
+          {/* La excepción declarada se ve, no se esconde: es la diferencia entre lo que
+              se prueba con un documento y lo que se apoya en una explicación. */}
+          {!s.entregable.archivo_ref && s.entregable.sin_documento_motivo && (
+            <span className="sub-sin-doc" title="Se dio por hecha sin documento de respaldo">
+              sin documento · {s.entregable.sin_documento_motivo}
+            </span>
+          )}
           <span className="sub-constancia-firma">
             {s.entregable.usuario} · {fechaCorta(s.entregable.creado_en)}
           </span>
@@ -108,29 +154,71 @@ export default function SubtareaFila({ s, guardando, onMarcar, compacta }: {
             placeholder="El informe se entregó a la Dirección Jurídica el 8 de agosto…"
             onChange={(e) => setNota(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Escape') { setAbierto(false); setNota(''); setArchivo(null); }
+              if (e.key === 'Escape') limpiar();
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) confirmar();
             }}
           />
+
+          {/* El respaldo (D56.4). Las tres opciones se muestran juntas para que la
+              excepción sea una elección explícita y no el resultado de no hacer nada. */}
+          <div className="sub-form-resp" role="radiogroup" aria-label="Respaldo">
+            {([
+              ['archivo', '📎 Archivo'],
+              ['enlace',  '🔗 Enlace'],
+              ['sin',     'No produce documento'],
+            ] as [Respaldo, string][]).map(([v, etiqueta]) => (
+              <button key={v} role="radio" aria-checked={respaldo === v}
+                      className={`sub-resp-op${respaldo === v ? ' on' : ''}`}
+                      onClick={() => setRespaldo(v)}>
+                {etiqueta}
+              </button>
+            ))}
+          </div>
+
+          {respaldo === 'archivo' && (
+            <div className="sub-form-fila">
+              <input ref={inputArchivo} type="file" hidden
+                     onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
+              <button className="sub-form-adj" onClick={() => inputArchivo.current?.click()}>
+                {archivo ? `📎 ${archivo.name.slice(0, 34)}` : 'Elegir archivo…'}
+              </button>
+              {archivo && (
+                <button className="sub-form-quitar" onClick={() => {
+                  setArchivo(null);
+                  if (inputArchivo.current) inputArchivo.current.value = '';
+                }}>quitar</button>
+              )}
+            </div>
+          )}
+
+          {respaldo === 'enlace' && (
+            <input
+              className="sub-form-enlace"
+              type="url"
+              value={enlace}
+              placeholder="https://drive.google.com/… o el enlace del expediente"
+              onChange={(e) => setEnlace(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') limpiar(); }}
+            />
+          )}
+
+          {respaldo === 'sin' && (
+            <input
+              className="sub-form-motivo"
+              value={motivo}
+              placeholder="Por ejemplo: fue una reunión de coordinación, no dejó documento"
+              onChange={(e) => setMotivo(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Escape') limpiar(); }}
+            />
+          )}
+
           <div className="sub-form-pie">
-            <input ref={inputArchivo} type="file" hidden
-                   onChange={(e) => setArchivo(e.target.files?.[0] ?? null)} />
-            <button className="sub-form-adj" onClick={() => inputArchivo.current?.click()}>
-              📎 {archivo ? archivo.name.slice(0, 28) : 'Adjuntar respaldo (opcional)'}
-            </button>
-            {archivo && (
-              <button className="sub-form-quitar" onClick={() => {
-                setArchivo(null);
-                if (inputArchivo.current) inputArchivo.current.value = '';
-              }}>quitar</button>
-            )}
+            {/* Se dice qué falta en vez de dejar el botón gris sin explicación. */}
+            <span className="sub-form-falta">{falta || ''}</span>
             <span className="sub-form-sep" />
-            <button className="sub-form-cancelar"
-                    onClick={() => { setAbierto(false); setNota(''); setArchivo(null); }}>
-              Cancelar
-            </button>
+            <button className="sub-form-cancelar" onClick={limpiar}>Cancelar</button>
             <button className="sub-form-ok" onClick={confirmar}
-                    disabled={nota.trim().length < 3 || guardando}>
+                    disabled={!!falta || guardando}>
               {guardando ? 'Guardando…' : 'Dar por hecha'}
             </button>
           </div>

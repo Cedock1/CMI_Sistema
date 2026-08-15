@@ -43,7 +43,7 @@ export async function GET(req: Request) {
     // La constancia de cada subtarea dada por hecha. Se traen todas y se toma la última
     // por subtarea: la tabla es append-only, así que las anteriores son el historial.
     db.from('entregable')
-      .select('id, subtarea_id, nota, archivo_ref, archivo_nombre, archivo_tipo, usuario, creado_en')
+      .select('id, subtarea_id, nota, archivo_ref, archivo_nombre, archivo_tipo, sin_documento_motivo, usuario, creado_en')
       .order('creado_en', { ascending: false }),
     // Quiénes más trabajan en cada tarea (D19). Sin esto las unidades que acompañan
     // quedan invisibles en la pantalla aunque la base ya las pondere.

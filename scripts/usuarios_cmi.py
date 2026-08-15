@@ -16,12 +16,22 @@ Requiere el venv con pg8000:
 """
 import json
 import secrets
+import ssl
 import string
 import sys
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
+
+# Al Python de esta Mac le falta el bundle de CA, así que cualquier llamada HTTPS a
+# Supabase muere con CERTIFICATE_VERIFY_FAILED. Mismo arreglo que en
+# migrar_captacion_notion.py: si certifi está, se usa su bundle.
+try:
+    import certifi
+    CTX = ssl.create_default_context(cafile=certifi.where())
+except ImportError:
+    CTX = ssl.create_default_context()
 
 BASE = Path(__file__).resolve().parent.parent
 SECRETOS = BASE / "secretos"
@@ -71,7 +81,7 @@ def api_admin(metodo: str, ruta: str, cuerpo: dict | None = None) -> dict:
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as r:
+        with urllib.request.urlopen(req, timeout=30, context=CTX) as r:
             return json.loads(r.read())
     except urllib.error.HTTPError as e:
         sys.exit(f"ERROR {e.code}: {e.read().decode()[:300]}")

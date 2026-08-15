@@ -19,7 +19,8 @@ import TareaModal from '@/components/tablero/TareaModal';
 import SubtareaFila, { type DatosMarca } from '@/components/tablero/SubtareaFila';
 import {
   avancePonderado, cobertura, enRiesgo, esActividadReal, marcarSubtarea, matchFecha,
-  matchTexto, plazoUrgente, proximoEstado, subirRespaldo, SIN_ACTIVIDAD, SIN_REPORTE,
+  matchTexto, nombreDeEnlace, plazoUrgente, proximoEstado, subirRespaldo,
+  SIN_ACTIVIDAD, SIN_REPORTE,
   type Eje, type FechaModo, type FechaSel, type Subtarea, type Tarea,
 } from '@/lib/cmi/tablero';
 
@@ -72,11 +73,16 @@ export default function Tablero() {
 
     try {
       // El archivo primero: si falla, no queda un entregable citando algo que no se subió.
+      // El enlace no se sube a ningún lado: se guarda tal cual, con `tipo: 'enlace'`,
+      // y se abre directo en vez de pedir una URL firmada al bucket.
       let archivo;
       if (datos?.archivo) archivo = await subirRespaldo(s.id, datos.archivo);
+      else if (datos?.enlace) {
+        archivo = { ref: datos.enlace, nombre: nombreDeEnlace(datos.enlace), tipo: 'enlace' };
+      }
 
       const { avance, entregable } = await marcarSubtarea(s.id, nuevo, {
-        nota: datos?.nota, archivo,
+        nota: datos?.nota, archivo, sinDocumentoMotivo: datos?.sinDocumentoMotivo,
       });
       pintar(nuevo, entregable);
       // El % viene de la base (lo calculó el trigger), nunca se computa acá.
@@ -239,21 +245,14 @@ export default function Tablero() {
         hayCaptacion={tareas.some((t) => t.captado)}
       />
 
-      <PanelResultados
-        titulo={VISTAS[vista].label}
-        items={filtradas}
-        totalVista={buckets[vista]}
-        colapsado={colapsado}
-        setColapsado={setColapsado}
-        secretarias={secretarias}
-        selSecretaria={selSecretaria}
-        setSelSecretaria={setSelSecretaria}
-        onSelect={(t) => setDetalle(t.codigo)}
-        hayFiltro={hayFiltro}
-        onLimpiar={limpiar}
-        hoy={hoy}
-      />
+      {/* ORDEN DE LA PÁGINA (pedido de César, 15-ago — es la propuesta que le había hecho a
+          Franz el 10-ago y que nunca se ejecutó): controles → ejes → estructura → tareas → mapa.
+          El motivo, textual: «para que no te aparezca al principio la chorrada de tareas».
+          Primero el plan y cómo se agrupa; la lista larga después, cuando ya sabés qué mirás.
 
+          Los controles (buscador, KPIs y filtro temporal) quedan ARRIBA de todo a propósito:
+          filtran también el árbol de Estructura, y un control que recorta algo que está más
+          arriba en la página no se encuentra. */}
       <section className="bloque">
         <div className="bloque-head">
           <h2>Ejes estratégicos</h2>
@@ -320,6 +319,21 @@ export default function Tablero() {
           {!filtradas.length && <p className="muted arbol-vacio">Sin resultados con esos filtros.</p>}
         </div>
       </section>
+
+      <PanelResultados
+        titulo={VISTAS[vista].label}
+        items={filtradas}
+        totalVista={buckets[vista]}
+        colapsado={colapsado}
+        setColapsado={setColapsado}
+        secretarias={secretarias}
+        selSecretaria={selSecretaria}
+        setSelSecretaria={setSelSecretaria}
+        onSelect={(t) => setDetalle(t.codigo)}
+        hayFiltro={hayFiltro}
+        onLimpiar={limpiar}
+        hoy={hoy}
+      />
 
       <section className="bloque">
         <div className="bloque-head">

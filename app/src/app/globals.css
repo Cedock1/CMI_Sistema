@@ -314,6 +314,26 @@ nav.top .user{font-size:12.5px;color:var(--muted)}
 .sub-form-ok{border:0;background:var(--accent);color:#fff;border-radius:7px;padding:5px 13px;
   font-size:12px;font-weight:600}
 .sub-form-ok:disabled{opacity:.45;cursor:not-allowed}
+
+/* El respaldo (D56.4): las tres opciones juntas, para que «no produce documento» sea
+   una elección explícita y no lo que pasa cuando alguien no adjunta nada. */
+.sub-form-resp{display:flex;gap:6px;margin-top:9px;flex-wrap:wrap}
+.sub-resp-op{border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  border-radius:7px;padding:4px 10px;font-size:11.5px}
+.sub-resp-op:hover{color:var(--ink);border-color:var(--muted)}
+.sub-resp-op.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.sub-form-fila{display:flex;align-items:center;gap:7px;margin-top:7px;flex-wrap:wrap}
+.sub-form-enlace,.sub-form-motivo{width:100%;margin-top:7px;border:1px solid var(--line);
+  border-radius:7px;padding:6px 9px;font-size:12.5px;font-family:inherit;
+  background:var(--surface);color:var(--ink)}
+.sub-form-enlace:focus,.sub-form-motivo:focus{outline:none;border-color:var(--accent)}
+/* Qué falta para poder confirmar: un botón gris que no explica por qué se lee como
+   un error del sistema y no como un dato que todavía no se escribió. */
+.sub-form-falta{font-size:11px;color:var(--muted)}
+/* La excepción declarada se ve en la constancia, no se esconde: es la diferencia entre
+   lo que se prueba con un documento y lo que se apoya en una explicación. */
+.sub-sin-doc{border:1px dashed var(--line);border-radius:5px;padding:1px 7px;font-size:10px;
+  color:var(--muted);max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* La subtarea entera es el área clickeable: marcarla es el gesto que produce el avance. */
 .sub-btn{flex:1;min-width:0;display:flex;align-items:center;gap:8px;border:0;background:transparent;
   color:var(--ink);text-align:left;padding:3px 5px;margin-left:-5px;border-radius:6px;font-size:inherit}
@@ -477,3 +497,86 @@ nav.top .user{font-size:12.5px;color:var(--muted)}
 .modal-origen-lista b { color: var(--muted); font-size: .78rem; margin-right: 6px; }
 .modal-origen-tag { margin-left: 7px; font-size: .68rem; padding: 1px 8px; border-radius: 20px;
   border: 1px solid var(--accent); color: var(--accent); }
+
+/* ==========================================================================
+   /TRABAJO — el apartado donde cada unidad trabaja (D56).
+   El tablero responde «¿cómo va todo?»; esta pantalla, «¿qué me toca?». Por eso
+   ordena por plazo y no por la jerarquía del Plan, y por eso la fila entera es
+   el gesto de abrir: lo que se viene a hacer está adentro.
+   ========================================================================== */
+.trabajo{max-width:1020px;margin:0 auto;padding:26px clamp(14px,3vw,28px) 80px}
+.trab-head h1{font-family:Georgia,serif;font-weight:600;font-size:clamp(23px,3vw,29px);margin:0 0 3px}
+.trab-head p{margin:0;font-size:13px}
+.trab-aviso{margin:16px 0 0;padding:9px 13px;border:1px solid var(--amber);border-radius:9px;
+  background:var(--surface);font-size:12.5px;color:var(--muted)}
+.trab-error{margin:14px 0 0;padding:9px 13px;border:1px solid var(--rojo);border-radius:9px;
+  background:var(--surface);font-size:12.5px;color:var(--rojo)}
+
+/* Los dos bloques: a mi cargo · acompaño. Separados a propósito (D56.3). */
+.trab-tabs{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.trab-tab{display:flex;align-items:center;gap:8px;border:1px solid var(--line);
+  background:var(--surface);color:var(--muted);border-radius:10px;padding:8px 14px;font-size:13.5px}
+.trab-tab:hover{color:var(--ink);border-color:var(--muted)}
+.trab-tab.on{border-color:var(--accent);color:var(--accent);font-weight:600;background:var(--accent-soft)}
+.trab-tab-n{font-variant-numeric:tabular-nums;font-weight:700}
+.trab-tab-alerta{font-size:10.5px;border:1px solid var(--rojo);color:var(--rojo);
+  border-radius:20px;padding:0 8px;font-weight:500}
+.trab-explica{margin:9px 0 0;font-size:12px;max-width:70ch}
+
+.trab-filtros{display:flex;align-items:center;gap:7px;margin-top:16px;flex-wrap:wrap}
+.trab-filtro{border:1px solid var(--line);background:var(--surface);color:var(--muted);
+  border-radius:8px;padding:5px 12px;font-size:12.5px}
+.trab-filtro:hover{color:var(--ink);border-color:var(--muted)}
+.trab-filtro.on{border-color:var(--accent);color:var(--accent);font-weight:600}
+.trab-buscar{flex:1;min-width:200px;border:1px solid var(--line);border-radius:8px;
+  padding:6px 11px;font-size:13px}
+.trab-buscar:focus{outline:none;border-color:var(--accent)}
+.trab-cuenta{font-size:12px;white-space:nowrap}
+.trab-nada{margin:28px 0;font-size:13px}
+
+.trab-lista{list-style:none;margin:16px 0 0;padding:0;display:flex;flex-direction:column;gap:7px}
+.trab-item{background:var(--surface);border:1px solid var(--line);border-radius:11px;overflow:hidden}
+/* La vencida se marca en el borde izquierdo, no con el fondo: teñir la fila entera
+   haría ilegible el resto y son 144 de 434. */
+.trab-item.vencida{border-left:3px solid var(--rojo)}
+.trab-item-head{display:flex;align-items:center;gap:11px;padding:11px 14px;cursor:pointer}
+.trab-item-head:hover{background:var(--surface2)}
+.trab-cod{font-size:11.5px;color:var(--muted);font-weight:600;flex-shrink:0}
+.trab-tit{flex:1;min-width:0;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.trab-rol{font-size:10px;border:1px solid var(--line);border-radius:20px;padding:1px 8px;
+  color:var(--muted);white-space:nowrap;flex-shrink:0}
+.trab-sinrepartir{font-size:10px;border:1px solid var(--amber);color:var(--amber);
+  border-radius:20px;padding:1px 8px;white-space:nowrap;flex-shrink:0}
+.trab-avance{font-size:11.5px;color:var(--muted);white-space:nowrap;flex-shrink:0}
+.trab-plazo{font-size:11.5px;color:var(--muted);white-space:nowrap;flex-shrink:0;min-width:96px;text-align:right}
+.trab-plazo.mal{color:var(--rojo)}
+.trab-dias{opacity:.7}
+.trab-flecha{color:var(--muted);font-size:11px;flex-shrink:0}
+
+.trab-item-cuerpo{padding:2px 14px 13px;border-top:1px solid var(--line)}
+.trab-desc{margin:11px 0 0;font-size:12.5px;line-height:1.55;max-width:78ch}
+.trab-meta{margin:8px 0 0;font-size:11.5px}
+.trab-sinsub{margin:11px 0 0;font-size:12px;max-width:72ch;line-height:1.55}
+.trab-subs{list-style:none;margin:11px 0 0;padding:0}
+.trab-sub-wrap{display:flex;align-items:flex-start;gap:8px;padding:1px 0}
+/* De quién es cada pieza. La propia se resalta: en el bloque de acompañamiento, ver
+   la sigla propia es la diferencia entre trabajo repartido y solo figurar. */
+.trab-sub-resp{font-size:9.5px;border:1px solid var(--line);border-radius:20px;padding:1px 7px;
+  color:var(--muted);white-space:nowrap;margin-top:6px;flex-shrink:0}
+.trab-sub-resp.mia{border-color:var(--accent);color:var(--accent);font-weight:600}
+.trab-sub-fila{list-style:none;margin:0;padding:0;flex:1;min-width:0}
+.trab-sub-lectura{flex:1;font-size:12.5px;padding:4px 0;color:var(--muted)}
+
+/* Lo que se pidió y todavía no tiene modelo (D56.5). Se dice, no se simula. */
+.trab-falta{margin-top:34px;padding:16px 18px;background:var(--surface2);
+  border:1px dashed var(--line);border-radius:12px}
+.trab-falta h3{margin:0 0 9px;font-size:13.5px}
+.trab-falta p{margin:0 0 8px;font-size:12.5px;line-height:1.6;max-width:80ch}
+.trab-falta code{font-size:11.5px;background:var(--surface);border:1px solid var(--line);
+  border-radius:4px;padding:0 5px}
+.trab-falta-pie{opacity:.8;font-size:11.5px}
+
+.trab-vacio{max-width:620px;margin:12vh auto;text-align:center}
+.trab-vacio h2{font-family:Georgia,serif;font-weight:600;font-size:21px;margin:0 0 8px}
+.trab-vacio p{font-size:13px;line-height:1.6}
+.trab-vacio-pie{margin-top:16px;font-size:12px;text-align:left}

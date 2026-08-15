@@ -504,11 +504,152 @@ evidencia obligatoria y la fecha real— y **le faltan dos campos**.
 
 ---
 
+## I · El apartado de trabajo (pedido de César, 14-ago)
+
+**D56 · Se puebla el control de acceso y se construye `/trabajo`.** · **APROBADA por César (14-ago)**
+
+**Qué lo origina.** Hoy el CMI **solo se mira**. Lo que falta es la parte donde cada unidad trabaja, que
+César describió completo en la reunión con Franz del 10-ago: *«cada uno de los secretarios va a tener un
+acceso y ese acceso va a poder ver sus tareas pendientes… para poder marcar qué se ha hecho con
+constancia, y si necesitan la ayuda de otra secretaría, o si la tarea está anclada a que se haga algo
+previo»*. Son cuatro funciones: **mis tareas · marcar con constancia · pedir apoyo · ver qué me bloquea.**
+
+**Lo que bloqueaba.** Sin `cmi.usuario` + `cmi.usuario_ambito` poblados no existe «mis tareas»: no hay
+forma de saber qué le toca a quién. Las seis cuentas de `auth.users` entran igual y ven las 434 tareas.
+
+### D56.1 · Las seis cuentas, con su rol y su ámbito
+
+| Correo (en `auth.users`) | Persona | Rol | Ámbito |
+|---|---|---|---|
+| `cesardockm@gmail.com` | César Mérida | `administrador` | DAM (1) |
+| `cesarm@gamlp.com` | César Mérida | `administrador` | DAM (1) |
+| `admin@gamlp.com` | cuenta de sistema | `administrador` | DAM (1) |
+| `javierd@gamlp.com` | Javier Reynaldo Delgadillo Andrade | `director` | **DGEG (5)** |
+| `franz@gamlp.com` | Franz Rolando Choque Espinoza | `jefe_unidad` | **DGEG (5)** |
+| `willam@gamlp.com` | Willam Cristian Baptista Noya | `rol_especializado` | DAM (1) |
+
+**Tres precisiones que costaron encontrarse y no deben re-descubrirse:**
+
+1. **El correo va en MINÚSCULAS.** La API de Supabase normaliza el correo al crear la cuenta: se pidió
+   `CesarM@gamlp.com` y en `auth.users` quedó `cesarm@gamlp.com`. `sesionConRol()` cruza la sesión contra
+   `cmi.usuario.correo` por **igualdad exacta**; cargarlo con mayúsculas deja al usuario entrando a la app
+   **sin rol y sin poder marcar**, que es la peor forma de fallar: silenciosa.
+2. **Willam va con una sola `l`**, y su correo se corrigió el 14-ago de `william@` a **`willam@`**. Los dos
+   candidatos que el CLAUDE.md daba por buenos —William Rodolfo Salazar Argandoña y Williams Ronny Trujillo
+   Wariste, ambos de UCT— **eran homónimos equivocados**. El real es **Coordinador V / Coordinador Técnico
+   del Despacho (DAM)**, no de UCT. Le cambia el ámbito: con DAM lee todo el árbol (D31: *«el Despacho ve
+   todo»*), no una unidad territorial.
+3. **Franz está en DAM por ítem y en DGEG por función**, y las dos cosas son ciertas. RRHH lo tiene como
+   Asistente Administrativo del Despacho; D30 lo define Jefe de Unidad de Asuntos Estratégicos
+   **«(virtualmente)»**, del equipo de Javier. El ámbito del CMI describe **sobre qué trabaja**, no dónde
+   cobra. No hay nada que «corregir» en RRHH.
+
+> **`cmi.persona` sigue en 0 y `usuario.persona_id` queda nulo.** Vincularlo exige cargar RRHH, que es
+> decisión aparte (pendiente 12) y con una regla propia: **solo el nombre de la persona en cada cargo ya
+> definido, la estructura no se toca**. Dar de alta seis usuarios no es excusa para colar esa carga.
+
+### D56.2 · Quién puede marcar
+
+`MARCAN` pasa de `['administrador']` a **`['administrador', 'director', 'jefe_unidad', 'rol_especializado']`**
+— o sea las cuatro personas de arriba. Es el camino de ampliación que ya estaba escrito en `auth.ts` desde
+la migración 0006. Sin esto, poblar las tablas no habilita a nadie: `/trabajo` nacería de solo lectura y el
+pendiente *«nadie ha marcado ninguna subtarea»* seguiría trabado por permisos y no por adopción.
+
+### D56.3 · Qué son «mis tareas» — ámbito por subárbol, acompañamiento aparte
+
+El ámbito de una unidad es **ella y todo lo que le cuelga** (D38: la secretaría es la frontera de lectura),
+resuelto por `unidad.depende_de`. Y **además** se muestran, **en un bloque separado**, las tareas donde la
+unidad figura como `concurrente`, `apoyo` o `territorial` sin ser la responsable principal.
+
+**Por qué separadas y no mezcladas.** Es la misma regla de César del 11-jul que ya implementa
+`v_avance_unidad`: *cada tarea cuenta entera para cada unidad que participa, no se reparte*. Pero
+responsabilidad principal y acompañamiento **no son lo mismo** y juntarlas haría creer a un director que
+todo lo que ve es suyo. Mezclarlas también escondería la señal que ya existe: **92 acompañantes sin ninguna
+subtarea a su nombre** (`v_apoyo_sin_subtarea`) — trabajo que se declaró compartido y nunca se repartió.
+Ese bloque es justamente donde esa señal se vuelve accionable.
+
+> **Consecuencia buscada, la misma que D19:** la suma de las dos listas es mayor que el total de tareas.
+> No es un error de conteo. El total real se cuenta sobre `tarea`.
+
+### D56.4 · La constancia ahora exige documento, con excepción declarada
+
+**Cambia la regla del 09-ago** (migración 0006), que dejaba la nota obligatoria y el archivo opcional. El
+motivo de entonces sigue escrito y sigue siendo válido: *«exigir archivo trabaría las subtareas que no
+producen uno —una reunión, una gestión— y hoy el riesgo mayor es que nadie marque nada»*. Lo que cambió es
+el contexto: hasta hoy marcaba **una sola persona, la que administra el sistema**; desde hoy marcan cuatro,
+y César lo planteó así: *«necesito verificarles un entregable, o sea algún documento que certifique que
+esto se hizo»*.
+
+**La regla nueva:** para dar por hecha una subtarea hay que **subir un archivo o pegar un enlace**. Si la
+subtarea genuinamente no produce documento, hay que **declararlo y escribir por qué** — no se puede saltear
+en silencio. La nota sigue siendo obligatoria en los dos casos.
+
+**Por qué con excepción y no a secas.** Exigir documento sin salida congelaría las subtareas de gestión y
+el avance con ellas — el riesgo que la decisión del 09-ago identificó bien. La excepción declarada
+conserva las dos cosas: no traba a nadie, y **lo que se marcó sin respaldo queda contado y visible** en vez
+de confundirse con lo que sí lo tiene. Es el mismo principio que el CMI ya aplica en todos lados: *nunca
+vacío en silencio*, y `vacio > equivocado`.
+
+**Se aplica de aquí en adelante.** Los entregables previos no se tocan — hoy son **0**, así que no hay nada
+que retro-completar, pero la regla vale igual si mañana los hubiera: `entregable` es **append-only**.
+
+> **Alineación con el gabinete del 12-ago.** De los cuatro huecos que midió sobre 225 resultados, la
+> evidencia era el mayor (190/225 la traían) y su regla fue: *«para que realmente sea resultado verificable
+> tiene que haber evidencia»*. D56.4 es esa regla puesta en el punto donde se produce el dato, no en el
+> reporte que lo lee después.
+
+### D56.5 · Orden de construcción
+
+1. Poblar `usuario` + `usuario_ambito` y ampliar `MARCAN`. **Sin esto no hay «mis tareas».**
+2. La constancia con documento obligatorio (base + ruta), **antes** de abrir `/trabajo`: si se abre primero,
+   las primeras marcas de cuatro personas entran con la regla vieja y quedan como precedente.
+3. La pantalla `/trabajo` con las cuatro funciones. *Pedir apoyo* y *ver qué me bloquea* **no tienen modelo
+   todavía** — `tarea_concurrente` cubre el acompañamiento pero no una *solicitud* de apoyo, y no existe
+   ninguna relación de dependencia entre tareas. Se declaran acá como faltantes para que no se resuelvan
+   improvisando en la pantalla.
+
+### D56.6 · El tablero se reordena: primero el plan, después la lista · **APROBADA por César (15-ago)**
+
+Es la propuesta que César le hizo a **Franz el 10-ago** y que Franz nunca respondió. Se ejecuta igual,
+por decisión de César, porque el motivo no dependía de esa respuesta: *«para que no te aparezca al
+principio la chorrada de tareas»*.
+
+**El orden nuevo, de arriba abajo:**
+
+| | Sección | Por qué ahí |
+|---|---|---|
+| 1 | Buscador · KPIs · filtro temporal | **Los controles van arriba de todo.** Filtran también el árbol de Estructura y el mapa; un control que recorta algo que está más arriba en la página no se encuentra |
+| 2 | **Ejes estratégicos** | el plan primero: de qué se trata la gestión |
+| 3 | **Estructura** | cómo se agrupa ese plan |
+| 4 | Tareas (panel ordenable) | la lista larga, cuando ya sabés qué estás mirando |
+| 5 | Territorio (mapa) | dónde cae |
+
+**Los KPIs siguen siendo navegación, no adorno** —lo que hacía útil al `gamlp-avance-2031`—: al pulsar
+*Vencidas* las tres secciones de abajo se recortan a la vez (Estructura 148 · panel 148 · mapa 127
+ubicadas). Eso no cambió con el reordenamiento y se verificó después de moverlo.
+
+**Lo que NO se hizo, y se evaluó:** desacoplar Ejes y Estructura de los filtros para que muestren
+siempre el total del Plan. Se descartó porque hoy el árbol **se puede filtrar** y eso funciona; fijarlo
+habría cambiado una capacidad por una comodidad.
+
+> **`/trabajo` no reemplaza al tablero y el tablero no reemplaza a `/trabajo`.** El tablero responde
+> «¿cómo va todo?» y ordena por el plan; `/trabajo` responde «¿qué me toca?» y ordena por plazo. Son
+> preguntas distintas y por eso son pantallas distintas.
+
+---
+
 ## Decisiones ABIERTAS (aún sin resolver — no asumir)
 
 - **Armar** (meta/indicador/actividades) los 6 proyectos paraguas + el nuevo "Alimentación Solidaria", y
   validar con las secretarías la asignación de los 85 (fue por reglas de tema; ajustable).
 - **Titularidad de infraestructura** (personal de César → institucional vía convenio Entel).
+- **Cómo se pide apoyo a otra secretaría** (D56.5). `tarea_concurrente` guarda quién *acompaña*, no quién
+  *pidió* acompañamiento: no tiene estado, ni quién lo solicitó, ni si el otro lo aceptó. Hoy un apoyo
+  aparece ya concedido. Falta decidir si es una solicitud con aceptación o un alta directa que se avisa.
+- **Qué bloquea a una tarea** (D56.5). **No existe ninguna relación de dependencia entre tareas** en el
+  esquema. César lo pidió textual —*«si la tarea está anclada a que se haga algo previo»*— y no hay dónde
+  ponerlo. Falta decidir si es dependencia tarea↔tarea, subtarea↔subtarea, o un bloqueo declarado en texto
+  con responsable (que es lo más barato y lo que más se parece a cómo se traba de verdad un trámite).
 
 ### Pendientes EXTERNOS (dependen de terceros, no bloquean el diseño)
 - **Export del POA de piso 8** (D32) — y **confirmar su granularidad**: ¿llega a nivel actividad? Si solo

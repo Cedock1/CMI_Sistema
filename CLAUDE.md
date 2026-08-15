@@ -48,9 +48,10 @@ y `ANTHROPIC_MODEL=claude-sonnet-5`.
 | Ruta | Qué hace |
 |---|---|
 | `/login` | ingreso (única pública) |
+| `/trabajo` | **lo que le toca a tu unidad**: a mi cargo · acompaño · sin dueño; marcar con constancia (D56) |
 | `/tablero` | árbol jerárquico, semáforo de estado, mapa por macrodistrito |
 | `/generar` | generación de tareas con IA + edición RICE en línea |
-| `/api/cmi/proyectos` · `tablero` · `generar` · `guardar` | backend `service_role` |
+| `/api/cmi/proyectos` · `tablero` · `trabajo` · `generar` · `guardar` | backend `service_role` |
 
 Tablas que consulta el código: `unidad`, `eje`, `programa`, `proyecto`, `actividad`, `tarea`,
 `subtarea`, `bitacora`. Las vistas `v_*` existen pero todavía no se usan desde la app.
@@ -1904,11 +1905,20 @@ servidor y `CMI_PRUEBAS_HABILITADO=false`.
 **5 · Seis usuarios creados** (`usuarios_cmi.py crear`), todos auto-confirmados, contraseñas en
 `secretos/usuarios_cmi.md`: `cesardockm@gmail.com` (original) · `CesarM@gamlp.com` ·
 `JavierD@gamlp.com` · `Franz@gamlp.com` · `William@gamlp.com` · `admin@gamlp.com`.
-> **Los seis entran igual y ven las 434 tareas.** El control de roles NO está implementado:
-> `cmi.usuario` y `usuario_ambito` siguen **vacías**.
-> **Si el script falla con `CERTIFICATE_VERIFY_FAILED`:** al Python de esta Mac le falta el bundle de
-> certificados. `/tmp/pgvenv/bin/pip install certifi` y
-> `export SSL_CERT_FILE=$(/tmp/pgvenv/bin/python -c "import certifi;print(certifi.where())")`.
+> **Los seis entran igual y ven las 434 tareas.** El control de roles NO está implementado.
+> ⚠️ **Dos correcciones del 14-ago a este párrafo** (se dejó el texto original arriba, tachado por
+> estas líneas, porque la corrección es el dato útil):
+> 1. **`cmi.usuario` NO estaba vacía**: tenía la fila de César desde la migración 0006, y
+>    `usuario_ambito` la suya. Faltaban **5 de 6**, no las 6. Se poblaron: ver D56 y la entrada
+>    del 14-ago abajo.
+> 2. **Los correos de arriba están con mayúsculas y en `auth.users` viven en MINÚSCULAS** — la API
+>    de Supabase los normaliza al crear. Y `William@` pasó a **`willam@`**: el nombre de la persona
+>    se escribe con una sola `l`.
+> ~~**Si el script falla con `CERTIFICATE_VERIFY_FAILED`**~~ → **ya no hace falta la variable de
+> entorno (14-ago).** `usuarios_cmi.py` usa el bundle de `certifi` por su cuenta, igual que
+> `migrar_captacion_notion.py` desde el 07-ago. Volvió a aparecer al cambiarle el correo a Willam, y
+> se arregló en la causa en vez de en el comando: una instrucción que hay que acordarse de escribir
+> no es un arreglo. Si `certifi` no está: `/tmp/pgvenv/bin/pip install certifi`.
 
 **6 · Ajustes de interfaz.** Subtareas indentadas en el árbol con guía vertical (`.arbol .sub-lista`;
 el modal quedó igual). Y `scripts/aplicar_migracion.py` para aplicar cualquier migración con un
@@ -1927,35 +1937,150 @@ protegió solo. `docs/Guia_crear_accesos.md` sí entró, pero contiene **instruc
 
 ---
 
-## Lo siguiente: el apartado de trabajo (pedido de César, 14-ago)
+### 14-ago · El apartado de trabajo: acceso poblado, constancia con documento y `/trabajo`
 
-Hoy el CMI **solo se mira**. Falta la parte donde cada unidad trabaja. César lo describió completo
-en la reunión con Franz del 10-ago, sin llamarlo así:
+Todo lo de este bloque está aplicado, verificado en pantalla y decidido en **D56**. Hoy el CMI
+dejó de ser solo un tablero que se mira.
 
-> *«cada uno de los secretarios va a tener un acceso y ese acceso va a poder ver **sus tareas
-> pendientes**… para poder marcar qué se ha hecho **con constancia**, y si necesitan **la ayuda de
-> otra secretaría**, o si la tarea está anclada a que se haga **algo previo**»*
+**1 · El acceso, poblado** (`migrations/0017_poblar_acceso.sql`). Las seis cuentas quedaron con rol
+y ámbito. Roles y ámbitos los eligió César uno por uno:
 
-Cuatro funciones: **mis tareas · marcar con constancia · pedir apoyo · ver qué me bloquea.** La
-segunda ya existe y funciona (0006). Las otras tres, no.
-
-**Bloqueante:** sin poblar `cmi.usuario` + `usuario_ambito` no existe «mis tareas». Quedó a medio
-resolver y NO se ejecutó, a pedido de César («dejalo como está»):
-
-| Cuenta | Rol propuesto | Ámbito | Estado |
+| Correo (en `auth.users`) | Persona | Rol | Ámbito |
 |---|---|---|---|
-| `CesarM@` · `cesardockm@` · `admin@` | administrador | todo | propuesto |
-| `JavierD@` | director | **DGEG** | ✅ confirmado en RRHH: Javier Reynaldo Delgadillo Andrade, DIRECTOR |
-| `Franz@` | ¿`jefe_unidad` o `asistencia`? | **DAM** | ⚠️ su cargo es Asistente Estratégico III, pero César iba a delegarle la administración |
-| `William@` | rol_especializado | **UCT** | ⚠️ **hay DOS en UCT**: William Rodolfo Salazar Argandoña (Prof. III) y Williams Ronny Trujillo Wariste (Téc. Adm. V). **Falta decir cuál** |
+| `cesardockm@gmail.com` · `cesarm@gamlp.com` · `admin@gamlp.com` | César Mérida / sistema | `administrador` | DAM (1) |
+| `javierd@gamlp.com` | Javier Reynaldo Delgadillo Andrade | `director` | DGEG (5) |
+| `franz@gamlp.com` | Franz Rolando Choque Espinoza | `jefe_unidad` | DGEG (5) |
+| `willam@gamlp.com` | Willam Cristian Baptista Noya | `rol_especializado` | DAM (1) |
 
-Roles disponibles: `administrador`, `director`, `jefe_unidad`, `rol_especializado`, `asistencia`,
-`observador`. Fuente de RRHH: `GAMLP Docs/Consultor gamlp 11-08-2026.xlsx` (5.697 filas; columnas
-`E/F/G` apellidos y nombres, `M` cargo, `P` unidad, `Q` sigla).
+> ### ⚠️ Tres cosas que costaron encontrarse y no hay que re-descubrir
+> **1 · El correo va en MINÚSCULAS.** La API de Supabase lo normaliza al crear la cuenta: se pidió
+> `CesarM@gamlp.com` y quedó `cesarm@gamlp.com`. `sesionConRol()` cruza contra `usuario.correo` por
+> **igualdad exacta**, así que cargarlo con mayúsculas deja al usuario entrando a la app **sin rol y
+> sin poder marcar** — falla en silencio. La 0017 trae un bloque que **aborta** si algún correo no
+> casa, en las dos direcciones.
+>
+> **2 · Willam va con una sola `l`, y no es de UCT.** Los dos candidatos que este archivo daba por
+> buenos —William Rodolfo Salazar Argandoña y Williams Ronny Trujillo Wariste— **eran homónimos
+> equivocados**. El real es **Willam Cristian Baptista Noya**, Coordinador V / Coordinador Técnico
+> del **Despacho (DAM)** — su CI e ítem están en `secretos/usuarios_cmi.md`, que no se commitea, por
+> la misma regla con que `cmi.persona` guarda solo nombre, unidad, cargo y correo (10-ago: *«el
+> esquema hizo esa elección antes y conviene respetarla, no ampliarla»*). Le cambia el ámbito: con DAM lee
+> todo el árbol. **Su correo se corrigió** de `william@` a `willam@` por la API admin
+> (`PUT /auth/v1/admin/users/{id}` con `email_confirm: true`); la contraseña no cambió pero el
+> correo viejo dejó de servir.
+>
+> **3 · Franz está en DAM por ítem y en DGEG por función**, y las dos cosas son ciertas: RRHH lo
+> tiene como Asistente Administrativo del Despacho, y D30 lo define Jefe de Unidad de Asuntos
+> Estratégicos «(virtualmente)», del equipo de Javier. El ámbito dice **sobre qué trabaja**, no
+> dónde cobra. El homónimo descartado es Ramiro Franz Taboada Cerda (DAAE).
 
-**Después del poblado:** (a) pantalla `/trabajo`; (b) reordenar el tablero como César le planteó a
-Franz —estructura → estratégico → tareas con filtro, *«para que no te aparezca al principio la
-chorrada de tareas»*—, propuesta que Franz **nunca respondió**.
+**2 · La constancia ahora exige documento** (`0018_constancia_con_documento.sql`, D56.4). Cambia la
+regla del 09-ago: para dar por hecha una subtarea hay que **subir un archivo o pegar un enlace**, y
+si genuinamente no produce documento hay que **declararlo con un motivo**. El motivo pide 10
+caracteres mínimo: deja pasar «fue una reunión» (15) y rechaza «no aplica» (9) —un motivo que no
+dice nada no es una excepción declarada, es la regla salteada con otro nombre—. Vista nueva
+`v_constancia_sin_documento`, y la bitácora anota el respaldo o la excepción en la misma línea.
+
+> **Por qué con excepción y no a secas.** El motivo del 09-ago para dejar el archivo opcional sigue
+> siendo válido —exigirlo trabaría las subtareas de gestión y hoy el riesgo mayor es que nadie
+> marque nada—. Lo que cambió es que ya no marca una sola persona. La excepción declarada conserva
+> las dos cosas: no traba a nadie, y lo que se marcó sin respaldo queda **contado y visible**.
+
+**3 · `MARCAN` ampliado** a `director`, `jefe_unidad` y `rol_especializado` (D56.2): las cuatro
+personas de la tabla. `observador` y `asistencia` quedan afuera — el primero es lectura por
+definición, el segundo no tiene todavía a nadie que lo use.
+
+**4 · La pantalla `/trabajo`** (`app/src/app/trabajo/page.tsx` + `api/cmi/trabajo/route.ts`).
+Ordena por plazo, no por la jerarquía del Plan: la pregunta es «¿qué me toca?», no «¿cómo va todo?».
+Tres bloques separados **a propósito** (D56.3):
+
+| Bloque | Qué es | Hoy |
+|---|---|---|
+| **A mi cargo** | la unidad, o una que le cuelga, es la responsable | **361** (141 vencidas) |
+| **Acompaño** | figura como concurrente/apoyo/territorial sin ser responsable | **0** |
+| **Sin dueño** | no le aparecen a nadie · **solo con ámbito raíz** | **73** (6 vencidas) |
+
+**5 · La guarda de ámbito, que faltaba y era un agujero** (`app/src/lib/cmi/ambito.ts`). Tener un rol
+que marca alcanzaba para marcar **cualquier** subtarea del sistema: Javier ve 1 tarea en `/trabajo`
+y podía marcar las 434. Ahora `PATCH /api/cmi/subtarea` valida el ámbito con **el mismo helper** que
+usa `/trabajo` para decidir qué mostrar — si cada uno lo calculara por su lado, se podría ver una
+cosa y poder otra, que es lo que D31 manda evitar. Probado con el ámbito acotado a DGEG: **403** en
+las dos subtareas ajenas.
+
+> ### Lo que el trabajo destapó, y que NO se tocó
+> **1 · 71 tareas sin responsable.** `responsable_unidad_id` nulo. Con el ámbito por subárbol no le
+> aparecerían a nadie — invisibles justo en la pantalla que existe para trabajarlas. Por eso el
+> bloque «Sin dueño», que las muestra a quien tiene el ámbito raíz. **No se les puso responsable:**
+> inventarlo sería peor que el hueco.
+>
+> **2 · Once unidades no cuelgan de DAM.** Cinco raíces sueltas sin `depende_de` —SAF, SL, SDI y
+> **dos CMAC con la misma sigla** (ids 134 y 139)— más seis que cuelgan de una de ellas. Son las
+> unidades genéricas de subalcaldía del MOF. Arrastran 2 tareas que el Despacho no alcanza por el
+> árbol, contra D31. El organigrama es del MOF y no se reordena de paso.
+>
+> **3 · C207, C208 y C209 tienen a EDMC —una descentralizada— como responsable principal**, lo que
+> el trigger `trg_descentralizada_no_principal` (0007) prohíbe. Son heredadas de Notion, anteriores
+> al trigger, así que la guarda nunca las revisó. **Lo encontró el remonte de `cmi_pruebas`**:
+> `--con-tareas` falla al copiarlas. Es exactamente para lo que ese esquema existe.
+>
+> **4 · Un bug de fechas en el tablero, corregido.** `plazoVencido()` hacía `new Date("2026-08-14")`,
+> que se interpreta como medianoche **UTC** = el 13 a las 20:00 en La Paz (GMT-4). Una tarea que
+> vence HOY se contaba como vencida: 142 en pantalla contra 141 por SQL, y el caso concreto era
+> **C277**. Ahora todo se compara por **día local en texto**, libre de zona horaria (`diaLocal`,
+> `diasHasta` en `lib/cmi/tablero.ts`). Afectaba al tablero también, no solo a `/trabajo`.
+
+**Cómo se verificó, sin ensuciar la base real.** Las escrituras fueron todas a **`cmi_pruebas`**, con
+la cabecera `X-CMI-Esquema` desde la sesión del navegador. Seis casos contra la ruta real —sin nota ·
+sin respaldo · motivo corto · archivo Y motivo · con enlace · excepción declarada— dieron los cuatro
+400 y los dos 200 esperados, con el trigger derivando 50% → 100%. El CHECK de la base se probó aparte
+con cinco casos en una transacción revertida. **`cmi` quedó en 434 tareas · 483 subtareas · 0
+entregables · 0 marcas nuevas en la bitácora.**
+
+> **Se cambió el ámbito de César a DGEG por un minuto** para probar la guarda con un ámbito acotado,
+> y se restauró a DAM verificando la fila. No hay forma de probar eso sin una sesión acotada, y
+> entrar con la cuenta de otra persona no es opción.
+
+**Lo que sigue sin existir, y se dice en la propia pantalla** (D56.5): **pedir apoyo** —
+`tarea_concurrente` guarda quién acompaña, no quién lo *pidió*: sin estado, sin solicitante, sin
+aceptación— y **ver qué me bloquea** — no hay **ninguna** relación de dependencia entre tareas en el
+esquema —. Las dos quedaron en «Decisiones abiertas» de la bitácora. No se simularon: un botón que no
+escribe en ningún lado engaña a quien lo usa.
+
+---
+
+### 15-ago · El tablero reordenado: primero el plan, después la lista (D56.6)
+
+Pedido de César, y es la propuesta que le había hecho a **Franz el 10-ago** — Franz nunca la
+respondió y se ejecutó igual, porque el motivo no dependía de esa respuesta: *«para que no te
+aparezca al principio la chorrada de tareas»*.
+
+**Antes:** controles → **tareas** → ejes → estructura → mapa.
+**Ahora:** controles → **ejes → estructura** → tareas → mapa.
+
+| | Sección | Por qué ahí |
+|---|---|---|
+| 1 | Buscador · KPIs · filtro temporal | **Arriba de todo, a propósito.** Filtran también el árbol de Estructura y el mapa; un control que recorta algo que está más arriba en la página no se encuentra |
+| 2 | Ejes estratégicos | el plan primero |
+| 3 | Estructura | cómo se agrupa |
+| 4 | Tareas | la lista larga, cuando ya sabés qué mirás |
+| 5 | Territorio | dónde cae |
+
+**Es un solo movimiento en `app/src/app/tablero/page.tsx`:** el `<PanelResultados>` baja después de la
+sección Estructura. No cambió ningún cálculo ni ningún dato.
+
+**Verificado en pantalla, y esto era lo que había que comprobar:** los KPIs **siguen siendo
+navegación** —lo que hacía útil al `gamlp-avance-2031`— aunque el panel que filtran quedó más abajo.
+Al pulsar *Vencidas*: Estructura 148 · panel 148 · mapa 127 ubicadas, las tres a la vez. Se dejó en
+*Total tareas*.
+
+> **Lo que se evaluó y NO se hizo:** desacoplar Ejes y Estructura de los filtros para que muestren
+> siempre el total del Plan. Hoy el árbol **se puede filtrar** y eso funciona; fijarlo habría cambiado
+> una capacidad por una comodidad.
+
+> **Detalle de dibujo, heredado y no tocado:** el mapa sigue usando poco lienzo. Zongo (arriba a la
+> derecha) y Hampaturi están legítimamente lejos del centro urbano, así que estiran la caja aunque el
+> encuadre ya excluye lo que cae fuera del municipio (arreglo del 09-ago). No es el bug de la
+> coordenada mala: es que el municipio real **es** así de grande.
 
 ---
 
@@ -2013,6 +2138,17 @@ las 43 tareas nuevas llevan escrito `modelo: (leído en conversación, sin API)`
    borran cuando él diga.
 5. **`secretos/accesos.env:26`** quedó con el placeholder `[YOUR-PASSWORD]`. La contraseña buena
    está en la línea 20.
+5b. **Avisarle a Willam que su correo cambió** a `willam@gamlp.com` (14-ago). La contraseña es la
+   misma; el correo viejo con dos «l» ya no entra.
+5c. **Las 71 tareas sin responsable** (bloque «Sin dueño» de `/trabajo`). No le aparecen a nadie
+   hasta que alguien les asigne unidad. Es lo que más limita la adopción de `/trabajo`: son el
+   16% de las 434.
+5d. **Las 11 unidades que no cuelgan de DAM**, incluidas **dos CMAC con la misma sigla** (ids 134 y
+   139). Son plantillas genéricas de subalcaldía del MOF. Mientras estén sueltas, sus tareas no las
+   alcanza el Despacho por el árbol.
+5e. **C207, C208 y C209 tienen a EDMC (descentralizada) como responsable principal**, lo que el
+   trigger de la 0007 prohíbe. Heredadas de Notion, anteriores a la guarda. Por la regla, EDMC
+   debería acompañar y el principal ser una unidad del MOF.
 
 **Depende de las secretarías (no de la herramienta):**
 

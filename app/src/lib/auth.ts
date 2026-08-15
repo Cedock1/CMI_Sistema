@@ -38,12 +38,22 @@ export async function correoSesion(): Promise<string | null> {
 export type Rol = 'administrador' | 'director' | 'jefe_unidad'
                | 'rol_especializado' | 'asistencia' | 'observador';
 
-// Quién puede dar por hecha una subtarea. Hoy solo el administrador: el sistema
-// está en prueba con un único usuario. Ampliar es agregar roles a esta lista y dar
-// de alta usuarios con su ámbito — el modelo de datos ya lo soporta.
-const MARCAN: Rol[] = ['administrador'];
+// Quién puede dar por hecha una subtarea. Ampliado el 14-ago (D56.2) al poblarse
+// `usuario_ambito`: son los cuatro roles que tienen persona detrás hoy —César y
+// admin@ (administrador), Javier (director), Franz (jefe_unidad) y Willam
+// (rol_especializado)—. Es el camino de ampliación que la 0006 ya dejaba escrito.
+//
+// `observador` y `asistencia` quedan afuera a propósito: el primero es lectura
+// pura por definición, y el segundo no tiene todavía a nadie que lo use, así que
+// habilitarlo sería abrir un permiso sin caso de uso que lo justifique.
+const MARCAN: Rol[] = ['administrador', 'director', 'jefe_unidad', 'rol_especializado'];
 
-export type Sesion = { correo: string; nombre: string; rol: Rol; unidadId: number | null };
+export type Sesion = {
+  correo: string; nombre: string; rol: Rol;
+  // El ÁMBITO: la unidad sobre la que trabaja esta persona. `/trabajo` lo expande a
+  // toda su descendencia (D56.3, D38: la secretaría es la frontera de lectura).
+  unidadId: number | null; unidadSigla: string | null; unidadNombre: string | null;
+};
 
 // Devuelve la sesión con su rol, o null si no hay sesión o el usuario no está dado
 // de alta en `cmi.usuario`. Sin rol no se marca nada: es preferible que alguien no
@@ -54,17 +64,21 @@ export async function sesionConRol(): Promise<Sesion | null> {
   const { cmiAdmin } = await import('@/lib/supabase');
   const { data } = await cmiAdmin()
     .from('usuario_ambito')
-    .select('rol_codigo, unidad_id, usuario!inner(nombre, correo)')
+    .select('rol_codigo, unidad_id, usuario!inner(nombre, correo), unidad(sigla, nombre)')
     .eq('usuario.correo', correo)
     .limit(1)
     .maybeSingle();
   if (!data) return null;
-  const u: any = data.usuario;
+  const uno = (x: any) => (Array.isArray(x) ? x[0] : x);
+  const u = uno(data.usuario);
+  const un = uno((data as any).unidad);
   return {
     correo,
-    nombre: (Array.isArray(u) ? u[0]?.nombre : u?.nombre) || correo,
+    nombre: u?.nombre || correo,
     rol: data.rol_codigo as Rol,
     unidadId: data.unidad_id ?? null,
+    unidadSigla: un?.sigla ?? null,
+    unidadNombre: un?.nombre ?? null,
   };
 }
 
