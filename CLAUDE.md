@@ -2109,10 +2109,62 @@ Al pulsar *Vencidas*: Estructura 148 · panel 148 · mapa 127 ubicadas, las tres
 > siempre el total del Plan. Hoy el árbol **se puede filtrar** y eso funciona; fijarlo habría cambiado
 > una capacidad por una comodidad.
 
-> **Detalle de dibujo, heredado y no tocado:** el mapa sigue usando poco lienzo. Zongo (arriba a la
-> derecha) y Hampaturi están legítimamente lejos del centro urbano, así que estiran la caja aunque el
-> encuadre ya excluye lo que cae fuera del municipio (arreglo del 09-ago). No es el bug de la
-> coordenada mala: es que el municipio real **es** así de grande.
+---
+
+### 15-ago · El mapa: a escala, con Zongo aparte y los macrodistritos nombrados
+
+Pedido de César. Eran **dos defectos, no uno**, y el segundo no se había notado nunca.
+
+**1 · El encuadre lo estiraba Zongo.** Medido: el hueco entre Zongo y el resto es de **36,8 km** y el
+siguiente hueco entre tareas es de **3,3 km** — un orden de magnitud, así que el corte es
+inequívoco. Ahora `partirPorHueco()` separa el núcleo (305 tareas) de los lejanos (9) y Zongo va en
+**su propio recuadro, con su propia escala**, rotulado y con la distancia dicha.
+
+> **Los percentiles NO sirven acá, y se probó antes de descartarlos.** Zongo son 9 de 314 = 2,9%, así
+> que un recorte p2–p98 lo incluye igual: medido, seguía usando el **98% del alto**. Lo que discrimina
+> es la **distancia**, no la frecuencia. Queda escrito en el código para que nadie lo reintente.
+
+**2 · El mapa estaba fuera de escala, ~3×.** Cada eje se estiraba por separado hasta llenar el
+lienzo. El territorio es **2,8× más alto que ancho** y el lienzo 1,1× más ancho que alto, así que La
+Paz se dibujaba tres veces más ancha de lo que es. Ahora `proyeccion()` respeta la proporción
+(1° lat = 110,6 km · 1° lon = 106,7 km a esta latitud) y hay **barra de escala**, que se ajusta sola
+al encuadre: 5 km sobre la ciudad, 1 km sobre Mallasa.
+
+**3 · Los macrodistritos, nombrados sobre sus tareas.** Decisión de César entre tres opciones.
+El nombre de cada macrodistrito va sobre el centro de **sus propias tareas**, y al hacer clic en su
+fila el mapa **reencuadra ese macrodistrito solo**, con su escala y su rótulo.
+
+> ### Por qué NO se dibujaron los límites: no existen
+> Se buscaron antes de decidir. **Atlas catastral del GAMLP**: responde, pero es HTML + PDF, sin
+> datos vectoriales. **`datos.gob.bo`**: 0 resultados para «macrodistrito». **OpenStreetMap
+> (Overpass)**: los macrodistritos **no están mapeados** — una sola relación de nivel 9/10 en todo el
+> municipio, y es un barrio.
+>
+> Dibujarlos a ojo habría sido inventar fronteras, que es la versión geográfica de lo que este
+> proyecto ya prohíbe para las coordenadas: *«un pin en el lugar equivocado es peor que ningún pin»*.
+> Lo que se dibuja es dónde cae el trabajo registrado, y solo con **3 tareas o más**: con una o dos,
+> el «centro» es la tarea misma y la etiqueta afirmaría algo que no se midió.
+>
+> **Si algún día se consiguen los límites reales**, hay que pedírselos a Catastro o al SIT del GAMLP:
+> el atlas existe, así que el shapefile lo tienen adentro.
+
+**4 · Un punto por COORDENADA, no por tarea.** Al enfocar Mallasa apareció el problema: decía 14
+tareas y se veían 5 puntos, porque muchas comparten lugar exacto (4 en el Bioparque, 3 en el ex
+relleno). Ahora cada punto lleva **cuántas tareas concentra**. Las 314 caen en **67 coordenadas**, y
+las mayores tienen 19, 15 y 13 — esconderlo era la misma clase de error que un porcentaje sin su
+cobertura.
+
+**Verificado en pantalla:** Mallasa enfocado da 3+3+4+4 = **14**, la escala pasa a 1 km y vuelve a 5
+al deseleccionar. Dos defectos de dibujo se corrigieron mirando el render, no el código: el punto de
+Zongo se superponía a su rótulo, y el recuadro tapaba la etiqueta «Hampaturi» —quedaba un «ur»
+asomando—, que ahora se corre a la izquierda.
+
+> ### Lo que el encuadre destapó y NO se tocó: C161–C163
+> «Cancha Venus, **Pampajasí**» está guardada a **12,4 km** de Pampahasi, al oeste en vez de al este.
+> Es el punto aislado que estira el mapa hacia la izquierda. Tiene una causa concreta: `geo.ts` busca
+> la palabra clave `pampahasi` y el lugar dice **«Pampajasí» con jota**, así que no casa y el
+> macrodistrito se asignó por cercanía a una coordenada que ya estaba mal. Es el patrón del homónimo
+> que el proyecto ya documentó en agosto. Corregirlo es decisión de César: son datos.
 
 ---
 
@@ -2181,6 +2233,13 @@ las 43 tareas nuevas llevan escrito `modelo: (leído en conversación, sin API)`
 5e. **C207, C208 y C209 tienen a EDMC (descentralizada) como responsable principal**, lo que el
    trigger de la 0007 prohíbe. Heredadas de Notion, anteriores a la guarda. Por la regla, EDMC
    debería acompañar y el principal ser una unidad del MOF.
+5f. **C161–C163 («Cancha Venus, Pampajasí») están a 12,4 km de Pampahasi**, al oeste en vez de al
+   este. Además `geo.ts` busca `pampahasi` y el lugar dice «Pampajasí» con jota, así que el
+   macrodistrito tampoco salió de la palabra clave sino de la coordenada mala. Son dos arreglos
+   distintos: la coordenada (dato) y la variante de la palabra clave (código).
+5g. **Los límites de los macrodistritos no existen en ningún lado descargable** (verificado el
+   15-ago en el atlas del GAMLP, `datos.gob.bo` y OpenStreetMap). Si se quiere el mapa con
+   fronteras reales, hay que pedir el shapefile a Catastro o al SIT del GAMLP.
 
 **Depende de las secretarías (no de la herramienta):**
 

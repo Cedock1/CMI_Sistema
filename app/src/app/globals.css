@@ -223,6 +223,23 @@ nav.top .user{font-size:12.5px;color:var(--muted)}
 .mapa{position:relative;width:100%}
 .mapa svg{width:100%;aspect-ratio:1/.9;display:block;background:var(--surface2);border-radius:9px}
 .mapa-aviso{margin:8px 0 0;font-size:10.5px;color:var(--amber);font-style:italic;line-height:1.5}
+/* Escala gráfica: un mapa sin tiles no dice a qué distancia está nada sin esto. */
+.mapa-escala line{stroke:var(--muted);stroke-width:2;opacity:.7}
+.mapa-escala text{fill:var(--muted);font-size:9.5px;opacity:.8}
+/* Recuadro de los lejanos (Zongo): escala PROPIA, y por eso va separado con línea punteada —
+   para que no se lea como parte del mismo encuadre. */
+.mapa-inset-caja{fill:var(--surface);stroke:var(--line);stroke-dasharray:3 3}
+.mapa-inset-tit{fill:var(--ink);font-size:10px;font-weight:600}
+.mapa-inset-sub{fill:var(--muted);font-size:9px}
+/* Nombre del macrodistrito sobre sus tareas. El halo del color del lienzo lo hace legible
+   encima de los puntos sin taparlos; `paint-order` pinta el borde ANTES del relleno. */
+.mapa-etiqueta{font-size:11px;font-weight:600;pointer-events:none;
+  paint-order:stroke;stroke:var(--surface2);stroke-width:3.5;stroke-linejoin:round;opacity:.92}
+/* Cuántas tareas hay en un punto donde varias comparten coordenada exacta. */
+.mapa-cuenta{font-size:9px;font-weight:700;fill:#fff;text-anchor:middle;dominant-baseline:central;
+  pointer-events:none}
+.mapa-foco{font-size:13px;font-weight:700;paint-order:stroke;stroke:var(--surface2);stroke-width:4;
+  stroke-linejoin:round}
 .macro-fila{width:100%;display:grid;grid-template-columns:92px 1fr 30px;gap:8px;align-items:center;
   padding:4px 6px;font-size:12px;border:0;background:transparent;color:var(--ink);border-radius:6px;text-align:left}
 .macro-fila:hover:not(:disabled){background:var(--surface2)}

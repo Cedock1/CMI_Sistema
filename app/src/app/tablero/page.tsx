@@ -341,7 +341,7 @@ export default function Tablero() {
           <span className="muted tnum">{conCoord.length} ubicadas</span>
         </div>
         <div className="mapa-grid">
-          <Mapa visibles={conCoord} todas={todasConCoord} />
+          <Mapa visibles={conCoord} todas={todasConCoord} selMacro={selMacro} />
           <div>
             {Object.entries(macroCount).sort((a, b) => b[1] - a[1]).map(([m, n]) => {
               const max = Math.max(1, ...Object.values(macroCount));
@@ -451,40 +451,236 @@ function TareasDelGrupo({ items, abiertas, setAbiertas, guardando, onMarcar, onA
 // Las tareas filtradas se pintan en color; el resto queda de fondo para no perder el contexto
 // territorial de lo que se está excluyendo.
 //
-// El encuadre se calcula SOLO con las coordenadas dentro del municipio. Antes bastaba una mal
-// geocodificada —tres tareas quedaron a 108 km al sur— para estirar la escala y dejar el 88%
-// del lienzo vacío, con todos los puntos reales amontonados en una franja. Las dudosas no se
-// esconden: se cuentan aparte, para que el error se vea en vez de deformar el dibujo.
-function Mapa({ visibles, todas }: { visibles: Tarea[]; todas: Tarea[] }) {
+// Sólo se dibujan las coordenadas dentro del municipio; las dudosas se cuentan aparte, para que
+// el error se vea en vez de deformar el dibujo.
+
+// Un grado en km a la latitud de La Paz (-16,5). El de longitud se acorta por el coseno de la
+// latitud: 111,32 × cos(16,5°) = 106,7. Sin esto no se puede saber la forma real del territorio.
+const KM_LAT = 110.6;
+const KM_LON = 106.7;
+
+// A partir de cuánto un grupo de puntos deja de ser "el mismo mapa". Zongo está a 36,8 km del
+// núcleo urbano y el siguiente hueco entre tareas es de 3,3 km: la separación es de otro orden,
+// no un caso de borde. Debajo de este umbral no se parte nada.
+const HUECO_KM = 12;
+
+// Parte los puntos en núcleo y lejanos por el mayor hueco en latitud.
+// POR QUÉ no se hace por percentiles: se probó y no sirve. Zongo son 9 de 314 (2,9%), así que un
+// recorte p2–p98 igual lo incluye y el encuadre sigue estirado — medido: usaba el 98% del alto.
+// El criterio que sí discrimina es la DISTANCIA, no la frecuencia.
+function partirPorHueco<T extends { lat: number | null }>(pts: T[]): { nucleo: T[]; lejanos: T[] } {
+  if (pts.length < 2) return { nucleo: pts, lejanos: [] };
+  const orden = [...pts].sort((a, b) => a.lat! - b.lat!);
+  let corte = -1, mayor = 0;
+  for (let i = 0; i < orden.length - 1; i++) {
+    const d = (orden[i + 1].lat! - orden[i].lat!) * KM_LAT;
+    if (d > mayor) { mayor = d; corte = i; }
+  }
+  if (mayor < HUECO_KM) return { nucleo: pts, lejanos: [] };
+  const abajo = orden.slice(0, corte + 1), arriba = orden.slice(corte + 1);
+  // El núcleo es el lado con más puntos; el otro va al recuadro aparte.
+  return abajo.length >= arriba.length
+    ? { nucleo: abajo, lejanos: arriba }
+    : { nucleo: arriba, lejanos: abajo };
+}
+
+// Proyección que RESPETA LA PROPORCIÓN del terreno. Antes cada eje se estiraba por separado hasta
+// llenar el lienzo, así que La Paz se dibujaba ~3× más ancha de lo que es: el territorio es 2,8×
+// más alto que ancho y el lienzo 1,1× más ancho que alto. Un mapa fuera de escala miente sobre
+// las distancias, que es justo lo que se le pide a un mapa.
+function proyeccion(pts: { lat: number | null; lon: number | null }[], W: number, H: number, pad: number) {
+  const las = pts.map((p) => p.lat!), los = pts.map((p) => p.lon!);
+  const laMin = Math.min(...las), laMax = Math.max(...las);
+  const loMin = Math.min(...los), loMax = Math.max(...los);
+  const anchoKm = (loMax - loMin) * KM_LON;
+  const altoKm = (laMax - laMin) * KM_LAT;
+  // El mínimo de 1 km es solo para la ESCALA: evita que un puñado de puntos casi coincidentes se
+  // explote a pantalla completa. No se usa para centrar — si se usa, un grupo de puntos con
+  // extensión cero (las 9 tareas de Zongo comparten coordenada) queda pegado arriba a la
+  // izquierda en vez de en el medio. Pasó al probarlo.
+  const escala = Math.min((W - 2 * pad) / Math.max(anchoKm, 1), (H - 2 * pad) / Math.max(altoKm, 1));
+  // Sobra de lienzo repartida a los dos lados, medida sobre la extensión REAL.
+  const dx = (W - anchoKm * escala) / 2, dy = (H - altoKm * escala) / 2;
+  return {
+    X: (lo: number) => dx + (lo - loMin) * KM_LON * escala,
+    Y: (la: number) => dy + (laMax - la) * KM_LAT * escala,
+    escala,
+    anchoKm, altoKm,
+    // Para poder descartar los puntos de fondo que caen fuera del encuadre en vez de
+    // amontonarlos contra el borde, donde se leerían como si estuvieran ahí.
+    dentro: (t: { lat: number | null; lon: number | null }) =>
+      t.lat! >= laMin && t.lat! <= laMax && t.lon! >= loMin && t.lon! <= loMax,
+  };
+}
+
+// Dónde poner el nombre de cada macrodistrito: en el centro de sus propias tareas.
+// NO es el centro del macrodistrito —eso exigiría sus límites, que no existen en ningún lado
+// descargable (se buscó en el atlas del GAMLP, en datos.gob.bo y en OpenStreetMap)—. Es dónde
+// cae su trabajo registrado, que es lo que este mapa muestra y lo único que se puede afirmar.
+//
+// Se piden al menos 3 tareas: con una o dos, el "centro" es la tarea misma y la etiqueta afirma
+// una ubicación de macrodistrito que no se midió.
+const MIN_PARA_ETIQUETA = 3;
+
+function etiquetasMacro(pts: Tarea[], X: (n: number) => number, Y: (n: number) => number) {
+  const grupos = new Map<string, Tarea[]>();
+  pts.forEach((t) => {
+    if (!t.macrodistrito) return;   // "Sin ubicar" no se rotula: no se sabe dónde va
+    grupos.set(t.macrodistrito, [...(grupos.get(t.macrodistrito) || []), t]);
+  });
+
+  const etiquetas = [...grupos.entries()]
+    .filter(([, ts]) => ts.length >= MIN_PARA_ETIQUETA)
+    .map(([nombre, ts]) => ({
+      nombre, n: ts.length,
+      x: ts.reduce((a, t) => a + X(t.lon!), 0) / ts.length,
+      y: ts.reduce((a, t) => a + Y(t.lat!), 0) / ts.length,
+    }))
+    .sort((a, b) => a.y - b.y);
+
+  // Separación vertical mínima: los centros de Centro, Cotahuma y Max Paredes caen a pocos
+  // cientos de metros y las etiquetas se pisan. Se empuja hacia abajo, en orden.
+  const ALTO = 13;
+  for (let i = 1; i < etiquetas.length; i++) {
+    if (etiquetas[i].y - etiquetas[i - 1].y < ALTO) etiquetas[i].y = etiquetas[i - 1].y + ALTO;
+  }
+  return etiquetas;
+}
+
+function Mapa({ visibles, todas, selMacro }: {
+  visibles: Tarea[]; todas: Tarea[]; selMacro: string | null;
+}) {
   const buenas = todas.filter((t) => !t.coord_dudosa);
   const dudosas = todas.length - buenas.length;
   if (!buenas.length) return <p className="muted">Sin coordenadas dentro del municipio.</p>;
 
-  const las = buenas.map((t) => t.lat!), los = buenas.map((t) => t.lon!);
-  const laMin = Math.min(...las), laMax = Math.max(...las);
-  const loMin = Math.min(...los), loMax = Math.max(...los);
-  const W = 600, H = 540, pad = 22;
-  // Clamp: un punto fuera del encuadre se dibuja en el borde en vez de salirse del lienzo.
-  const X = (lo: number) => pad + Math.min(1, Math.max(0, (lo - loMin) / (loMax - loMin || 1))) * (W - 2 * pad);
-  const Y = (la: number) => pad + Math.min(1, Math.max(0, (laMax - la) / (laMax - laMin || 1))) * (H - 2 * pad);
-
   const visiblesOk = visibles.filter((t) => !t.coord_dudosa);
-  const mostrarFondo = buenas.length > visiblesOk.length;
+
+  // EL ENCUADRE SIGUE A LO QUE SE ESTÁ MIRANDO. Con un macrodistrito elegido, ese macrodistrito
+  // llena el lienzo con su propia escala: es la única forma de ver Mallasa —14 tareas en 2 km—
+  // sin que quede un manchón. Sin selección se encuadra todo, como antes.
+  const base = selMacro && visiblesOk.length ? visiblesOk : buenas;
+  const { nucleo, lejanos } = partirPorHueco(base);
+  const W = 600, H = 540, pad = 24;
+  const p = proyeccion(nucleo, W, H, pad);
+
+  // El fondo da contexto de lo que se está excluyendo, pero solo el que cae DENTRO del encuadre:
+  // clampear el resto contra el borde lo mostraría en un lugar donde no está.
+  const fondo = buenas.filter((t) => !visiblesOk.includes(t) && p.dentro(t));
+  const enNucleo = new Set(nucleo.map((t) => t.id));
+  const etiquetasCrudas = etiquetasMacro(nucleo.filter((t) => enNucleo.has(t.id)), p.X, p.Y);
+
+  // El recuadro de los lejanos tiene su PROPIA escala, y se dice cuál: dibujarlos en la del
+  // núcleo los volvería un solo punto, y meterlos en el encuadre principal aplastaba todo lo
+  // demás — que es exactamente lo que hacía antes.
+  // `IT` es el alto que se reserva para las dos líneas de rótulo: sin eso los puntos se dibujan
+  // encima del texto, que es lo primero que pasó al probarlo.
+  const IW = 138, IH = 116, IT = 34, ix = W - IW - 12, iy = 12;
+  const pl = lejanos.length ? proyeccion(lejanos, IW, IH - IT, 14) : null;
+  const nombresLejanos = [...new Set(lejanos.map((t) => t.macrodistrito).filter(Boolean))].join(' · ');
+  const kmLejos = lejanos.length && nucleo.length
+    ? Math.round(Math.abs(Math.max(...lejanos.map((t) => t.lat!)) - Math.max(...nucleo.map((t) => t.lat!))) * KM_LAT)
+    : 0;
+
+  // La barra de escala se elige por el tamaño del encuadre: 2 km sobre toda la ciudad, pero
+  // sobre Mallasa esa barra sería más ancha que el mapa. Se toma el redondo que ocupe ~1/4.
+  const escalaKm = [10, 5, 2, 1, 0.5, 0.2].find((k) => k * p.escala <= (W - 2 * pad) / 3) ?? 0.2;
+
+  // El recuadro de los lejanos tapaba la etiqueta que cayera debajo — pasó con «Hampaturi»,
+  // que quedó como un «ur» asomando por el borde. La que choca se corre a la izquierda del
+  // recuadro y se ancla al final, en vez de esconderla: el macrodistrito tiene que nombrarse.
+  const etiquetas = etiquetasCrudas.map((e) => (
+    pl && e.x > ix - 26 && e.y < iy + IH + 8
+      ? { ...e, x: ix - 10, anchor: 'end' as const }
+      : { ...e, anchor: 'middle' as const }
+  ));
+
+  // Un círculo por COORDENADA, no por tarea. Muchas comparten lugar exacto —4 tareas en el
+  // Bioparque, 3 en el ex relleno de Mallasa— y dibujadas una encima de otra el mapa mostraba
+  // 5 puntos donde decía 14 tareas. El número va adentro: esconder cuántas hay en un punto es
+  // la misma clase de error que un porcentaje sin su cobertura.
+  const punto = (grupo: Tarea[], X: (n: number) => number, Y: (n: number) => number, base: number) => {
+    const t = grupo[0], n = grupo.length;
+    const r = Math.min(base * 2.4, base + 2.4 * Math.sqrt(n - 1));
+    return (
+      <g key={t.id}>
+        <circle cx={X(t.lon!)} cy={Y(t.lat!)} r={r}
+                fill={MCOL[t.macrodistrito || ''] || 'var(--gris)'} fillOpacity={0.82}
+                stroke="var(--surface)" strokeWidth={1}>
+          <title>
+            {n > 1 ? `${n} tareas · ` : ''}{t.macrodistrito || 'sin macrodistrito'}{'\n'}
+            {grupo.slice(0, 8).map((x) => `${x.codigo} · ${x.titulo}`).join('\n')}
+            {n > 8 ? `\n… y ${n - 8} más` : ''}
+          </title>
+        </circle>
+        {n > 1 && r >= 7 && (
+          <text x={X(t.lon!)} y={Y(t.lat!)} className="mapa-cuenta">{n}</text>
+        )}
+      </g>
+    );
+  };
+
+  // Agrupa por coordenada exacta, conservando el orden de entrada.
+  const porCoord = (pts: Tarea[]) => {
+    const m = new Map<string, Tarea[]>();
+    pts.forEach((t) => {
+      const k = `${t.lat},${t.lon}`;
+      m.set(k, [...(m.get(k) || []), t]);
+    });
+    return [...m.values()];
+  };
 
   return (
     <div className="mapa">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
-        {mostrarFondo && buenas.map((t) => (
-          <circle key={'f' + t.id} cx={X(t.lon!)} cy={Y(t.lat!)} r={2.3} fill="var(--line)" opacity={0.5} />
+        {fondo.map((t) => (
+          <circle key={'f' + t.id} cx={p.X(t.lon!)} cy={p.Y(t.lat!)} r={2.3} fill="var(--line)" opacity={0.5} />
         ))}
-        {visiblesOk.map((t) => (
-          <circle key={t.id} cx={X(t.lon!)} cy={Y(t.lat!)} r={4.6}
-                  fill={MCOL[t.macrodistrito || ''] || 'var(--gris)'} fillOpacity={0.82}
-                  stroke="var(--surface)" strokeWidth={1}>
-            <title>{t.codigo} · {t.macrodistrito}{'\n'}{t.titulo}</title>
-          </circle>
+        {porCoord(visiblesOk.filter((t) => enNucleo.has(t.id))).map((g) => punto(g, p.X, p.Y, 4.6))}
+
+        {/* El nombre de cada macrodistrito sobre sus propias tareas. No hay fronteras dibujadas
+            porque no existen los límites: lo que se afirma es dónde cae su trabajo, nada más. */}
+        {!selMacro && etiquetas.map((e) => (
+          <text key={e.nombre} x={e.x} y={e.y} className="mapa-etiqueta"
+                textAnchor={e.anchor} fill={MCOL[e.nombre] || 'var(--muted)'}>
+            {e.nombre}
+          </text>
         ))}
+
+        {/* Escala gráfica: sin ella, un mapa sin tiles no dice a qué distancia está nada. Y
+            cambia sola al enfocar un macrodistrito, que es cuando más importa: si no, un mapa
+            de Mallasa se leería con las distancias de uno de toda la ciudad. */}
+        <g className="mapa-escala">
+          <line x1={pad} y1={H - 16} x2={pad + escalaKm * p.escala} y2={H - 16} />
+          <text x={pad} y={H - 21}>{escalaKm} km</text>
+        </g>
+
+        {selMacro && (
+          <text x={pad} y={pad + 6} className="mapa-foco" fill={MCOL[selMacro] || 'var(--ink)'}>
+            {selMacro} · {visiblesOk.length} {visiblesOk.length === 1 ? 'tarea' : 'tareas'}
+          </text>
+        )}
+
+        {pl && (
+          <g>
+            <rect x={ix} y={iy} width={IW} height={IH} rx={8} className="mapa-inset-caja" />
+            <text x={ix + 9} y={iy + 16} className="mapa-inset-tit">{nombresLejanos || 'Fuera del núcleo'}</text>
+            <text x={ix + 9} y={iy + 28} className="mapa-inset-sub">
+              {lejanos.length} {lejanos.length === 1 ? 'tarea' : 'tareas'} · a {kmLejos} km
+            </text>
+            <g transform={`translate(${ix},${iy + IT})`}>
+              {porCoord(visiblesOk.filter((t) => !enNucleo.has(t.id))).map((g) => punto(g, pl.X, pl.Y, 3.4))}
+            </g>
+          </g>
+        )}
       </svg>
+
+      {lejanos.length > 0 && (
+        <p className="mapa-aviso">
+          {nombresLejanos || 'Un grupo de tareas'} está a {kmLejos} km del núcleo urbano, así que va
+          en su propio recuadro: en el mismo encuadre aplastaba todo lo demás contra un borde.
+        </p>
+      )}
       {dudosas > 0 && (
         <p className="mapa-aviso">
           {dudosas} {dudosas === 1 ? 'tarea quedó' : 'tareas quedaron'} fuera del municipio al
