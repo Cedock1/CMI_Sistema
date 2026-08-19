@@ -447,7 +447,9 @@ function TareasDelGrupo({ items, abiertas, setAbiertas, guardando, onMarcar, onA
   );
 }
 
-// Mapa de puntos en SVG puro: sin librería ni tiles externos (la app corre sin claves de API).
+// Mapa de puntos en SVG puro: sin librería de mapas y sin clave de API. El fondo cartográfico
+// son teselas de CARTO Positron servidas por URL directa (ver `teselas`), así que el territorio
+// se ve —calles y manzanas— sin arrastrar Leaflet ni MapLibre ni registrarse en ningún lado.
 // Las tareas filtradas se pintan en color; el resto queda de fondo para no perder el contexto
 // territorial de lo que se está excluyendo.
 //
@@ -484,6 +486,21 @@ function partirPorHueco<T extends { lat: number | null }>(pts: T[]): { nucleo: T
     : { nucleo: arriba, lejanos: abajo };
 }
 
+// Circunferencia de la Tierra en el ecuador. Una unidad de "mundo" (el cuadrado 0–1 de Web
+// Mercator) mide eso en x; a la latitud φ, lo que abarca en el terreno se acorta por cos φ.
+const CIRC_KM = 40075.017;
+
+// WEB MERCATOR — la proyección de las teselas. Antes acá había una equirectangular corregida por
+// el coseno de la latitud, que a esta escala da casi lo mismo pero NO calza con un mapa de fondo:
+// los puntos quedarían corridos respecto de las calles, que es peor que no tener mapa. Mercator
+// es además conforme (misma escala en x e y localmente), así que sigue respetando la proporción
+// del terreno, que era lo que la proyección anterior vino a arreglar.
+const mercX = (lon: number) => (lon + 180) / 360;
+const mercY = (lat: number) => {
+  const r = (lat * Math.PI) / 180;
+  return (1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2;
+};
+
 // Proyección que RESPETA LA PROPORCIÓN del terreno. Antes cada eje se estiraba por separado hasta
 // llenar el lienzo, así que La Paz se dibujaba ~3× más ancha de lo que es: el territorio es 2,8×
 // más alto que ancho y el lienzo 1,1× más ancho que alto. Un mapa fuera de escala miente sobre
@@ -494,23 +511,116 @@ function proyeccion(pts: { lat: number | null; lon: number | null }[], W: number
   const loMin = Math.min(...los), loMax = Math.max(...los);
   const anchoKm = (loMax - loMin) * KM_LON;
   const altoKm = (laMax - laMin) * KM_LAT;
+
+  // Extensión del encuadre en unidades de mundo. `mercY` crece hacia el SUR, por eso el mínimo
+  // de y sale de la latitud MÁXIMA.
+  const mx0 = mercX(loMin), my0 = mercY(laMax);
+  const extX = mercX(loMax) - mx0, extY = mercY(laMin) - my0;
+
+  // Cuánto mide en km una unidad de mundo a esta latitud. Sirve para dos cosas: el mínimo de
+  // 1 km de abajo y la barra de escala, que se sigue midiendo en px por km.
+  const kmPorMundo = CIRC_KM * Math.cos(((laMin + laMax) / 2) * Math.PI / 180);
   // El mínimo de 1 km es solo para la ESCALA: evita que un puñado de puntos casi coincidentes se
   // explote a pantalla completa. No se usa para centrar — si se usa, un grupo de puntos con
   // extensión cero (las 9 tareas de Zongo comparten coordenada) queda pegado arriba a la
   // izquierda en vez de en el medio. Pasó al probarlo.
-  const escala = Math.min((W - 2 * pad) / Math.max(anchoKm, 1), (H - 2 * pad) / Math.max(altoKm, 1));
+  const minMundo = 1 / kmPorMundo;
+  const escalaMundo = Math.min((W - 2 * pad) / Math.max(extX, minMundo),
+                               (H - 2 * pad) / Math.max(extY, minMundo));
   // Sobra de lienzo repartida a los dos lados, medida sobre la extensión REAL.
-  const dx = (W - anchoKm * escala) / 2, dy = (H - altoKm * escala) / 2;
+  const dx = (W - extX * escalaMundo) / 2, dy = (H - extY * escalaMundo) / 2;
   return {
-    X: (lo: number) => dx + (lo - loMin) * KM_LON * escala,
-    Y: (la: number) => dy + (laMax - la) * KM_LAT * escala,
-    escala,
+    X: (lo: number) => dx + (mercX(lo) - mx0) * escalaMundo,
+    Y: (la: number) => dy + (mercY(la) - my0) * escalaMundo,
+    // px por km, que es lo que necesita la barra de escala.
+    escala: escalaMundo / kmPorMundo,
     anchoKm, altoKm,
+    // Lo que hace falta para pedir las teselas: cuánto mide el mundo entero en px del lienzo y
+    // qué coordenada de mundo cae en el origen (0,0) del lienzo.
+    escalaMundo,
+    mundo0x: mx0 - dx / escalaMundo,
+    mundo0y: my0 - dy / escalaMundo,
     // Para poder descartar los puntos de fondo que caen fuera del encuadre en vez de
     // amontonarlos contra el borde, donde se leerían como si estuvieran ahí.
     dentro: (t: { lat: number | null; lon: number | null }) =>
       t.lat! >= laMin && t.lat! <= laMax && t.lon! >= loMin && t.lon! <= loMax,
   };
+}
+
+type Proyeccion = ReturnType<typeof proyeccion>;
+
+// EL FONDO CARTOGRÁFICO. Teselas de CARTO Positron: gris muy claro, pensado justamente para
+// llevar datos encima. Sin clave de API y sin librería — se calcula qué teselas cubren el
+// encuadre y se pegan como <image> dentro del mismo SVG, así comparten sistema de coordenadas
+// con los puntos y no hay dos capas que sincronizar.
+const SUBDOMINIOS = ['a', 'b', 'c', 'd'];
+// El viewBox de 600 unidades se pinta en ~700 px CSS, y el doble en pantallas retina. Pedir el
+// zoom que deja la tesela a ~2× de su tamaño nominal evita que el mapa se vea borroso.
+const SOBREMUESTREO = 2;
+// Tope de teselas por lienzo. Si un encuadre degenerado pidiera cientos, se prefiere quedarse
+// sin fondo antes que disparar esa cantidad de descargas.
+const MAX_TESELAS = 80;
+
+// El tablero tiene tema oscuro por `prefers-color-scheme`, y un mapa blanco dentro de una
+// pantalla oscura encandila. CARTO sirve el mismo estilo en las dos versiones, así que se elige
+// la que corresponda. Se resuelve en un efecto y no en el render para no romper la hidratación:
+// el servidor no sabe qué tema tiene el sistema de quien mira.
+function useEstiloBase() {
+  const [oscuro, setOscuro] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    setOscuro(mq.matches);
+    const alCambiar = (e: MediaQueryListEvent) => setOscuro(e.matches);
+    mq.addEventListener('change', alCambiar);
+    return () => mq.removeEventListener('change', alCambiar);
+  }, []);
+  return oscuro ? 'dark_all' : 'light_all';
+}
+
+function teselas(p: Proyeccion, W: number, H: number, estilo: string) {
+  if (!isFinite(p.escalaMundo) || p.escalaMundo <= 0) return [];
+  const z = Math.max(0, Math.min(18, Math.round(Math.log2((p.escalaMundo * SOBREMUESTREO) / 256))));
+  const n = 2 ** z;
+  const lado = p.escalaMundo / n;   // lo que mide una tesela en unidades del lienzo
+
+  const i0 = Math.floor(p.mundo0x * n), i1 = Math.floor((p.mundo0x + W / p.escalaMundo) * n);
+  const j0 = Math.max(0, Math.floor(p.mundo0y * n));
+  const j1 = Math.min(n - 1, Math.floor((p.mundo0y + H / p.escalaMundo) * n));
+  if ((i1 - i0 + 1) * (j1 - j0 + 1) > MAX_TESELAS) return [];
+
+  const lista: { key: string; url: string; x: number; y: number; lado: number }[] = [];
+  for (let i = i0; i <= i1; i++) {
+    for (let j = j0; j <= j1; j++) {
+      const ii = ((i % n) + n) % n;   // envolver el antimeridiano en vez de pedir una tesela que no existe
+      lista.push({
+        key: `${z}/${i}/${j}`,
+        url: `https://${SUBDOMINIOS[Math.abs(i + j) % SUBDOMINIOS.length]}.basemaps.cartocdn.com/${estilo}/${z}/${ii}/${j}@2x.png`,
+        x: i * lado - p.mundo0x * p.escalaMundo,
+        y: j * lado - p.mundo0y * p.escalaMundo,
+        lado,
+      });
+    }
+  }
+  return lista;
+}
+
+function Teselas({ p, W, H, recorte }: { p: Proyeccion; W: number; H: number; recorte: string }) {
+  const estilo = useEstiloBase();
+  const lista = teselas(p, W, H, estilo);
+  if (!lista.length) return null;
+  return (
+    <g clipPath={`url(#${recorte})`} className="mapa-teselas">
+      {lista.map((t) => (
+        // `lado + .5` cierra la costura de subpíxel que deja el redondeo entre teselas vecinas.
+        <image key={t.key} href={t.url} x={t.x} y={t.y} width={t.lado + 0.5} height={t.lado + 0.5}
+               preserveAspectRatio="none" />
+      ))}
+      {/* Velo claro para que los nombres de calle no compitan con las etiquetas de macrodistrito.
+          Se probó en 0,22 y el territorio quedaba tan lavado que no se distinguía la mancha
+          urbana —que es justo lo que se vino a mostrar—; 0,08 alcanza para separar las capas. */}
+      <rect x={0} y={0} width={W} height={H} fill="var(--surface)" opacity={0.08} />
+    </g>
+  );
 }
 
 // Dónde poner el nombre de cada macrodistrito: en el centro de sus propias tareas.
@@ -633,6 +743,14 @@ function Mapa({ visibles, todas, selMacro }: {
   return (
     <div className="mapa">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <clipPath id="mapa-recorte"><rect x={0} y={0} width={W} height={H} rx={9} /></clipPath>
+          <clipPath id="mapa-recorte-inset"><rect x={0} y={0} width={IW} height={IH - IT} rx={8} /></clipPath>
+        </defs>
+
+        {/* El territorio, debajo de todo lo demás. */}
+        <Teselas p={p} W={W} H={H} recorte="mapa-recorte" />
+
         {fondo.map((t) => (
           <circle key={'f' + t.id} cx={p.X(t.lon!)} cy={p.Y(t.lat!)} r={2.3} fill="var(--line)" opacity={0.5} />
         ))}
@@ -669,10 +787,18 @@ function Mapa({ visibles, todas, selMacro }: {
               {lejanos.length} {lejanos.length === 1 ? 'tarea' : 'tareas'} · a {kmLejos} km
             </text>
             <g transform={`translate(${ix},${iy + IT})`}>
+              {/* Zongo también lleva su mapa: si no, el recuadro es el único hueco vacío de la
+                  lámina y se lee como que ahí no se sabe qué hay. */}
+              <Teselas p={pl} W={IW} H={IH - IT} recorte="mapa-recorte-inset" />
               {porCoord(visiblesOk.filter((t) => !enNucleo.has(t.id))).map((g) => punto(g, pl.X, pl.Y, 3.4))}
             </g>
           </g>
         )}
+
+        {/* Atribución: no es decorativa, la exige la licencia de los datos de OpenStreetMap. */}
+        <text x={W - 8} y={H - 6} className="mapa-credito" textAnchor="end">
+          © OpenStreetMap · CARTO
+        </text>
       </svg>
 
       {lejanos.length > 0 && (

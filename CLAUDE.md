@@ -3,6 +3,17 @@
 Cuadro de Mando Integral del GAMLP. App **standalone** (D53): base de datos y despliegue propios,
 separada de `despacho-dam`, de la que fue extraída el 6-ago-2026.
 
+> ## 🚫 LA MÁXIMA DEL PROYECTO: NUNCA GASTAR API
+>
+> **Pedido de César (16-ago): «nunca gastes API es la máxima que tienes».** Va acá arriba, antes
+> que cualquier otra cosa, porque estaba solo al final —en Convenciones— y se leía tarde.
+> Leer transcripciones, clasificar, estimar, redactar metas, cotejar duplicados: **todo eso se
+> razona en la conversación de Claude Code, que ya está pagada.** Cada llamada de un script al
+> SDK consume saldo aparte de la cuenta de César. Si algo parece no entrar en una conversación,
+> **se pregunta antes** — no se lanza. El detalle completo y el patrón correcto
+> (razonar acá → JSON de propuesta → el script solo `--aplicar`) están en **Convenciones**.
+> La única API que corre es la del **producto en producción**, disparada por un usuario real.
+
 > **La referencia única de decisiones es `docs/Bitacora_de_decisiones_CMI.md`.**
 > Lo que ahí está marcado FIRME no se re-discute. Este archivo es el contexto operativo
 > (cómo se levanta, en qué estado quedó, qué falta); las decisiones de fondo van allá.
@@ -1894,7 +1905,9 @@ entiendo»*. La píldora aparece 31 veces porque son 12 programas repetidos bajo
 va por materia (D20), así que un programa aparece en cada eje del que tenga tareas.
 
 **4 · Vercel** — la app está **desplegada en producción**:
-`https://app-1ql3n8sq0-cedock1s-projects.vercel.app` (proyecto `cedock1s-projects/app`).
+~~`https://app-1ql3n8sq0-cedock1s-projects.vercel.app`~~ → **esa URL NO abre**, pide cuenta de
+Vercel (302 al SSO). El alias público es **`https://app-ten-chi-37.vercel.app`** — ver la entrada
+del 17/19-ago. (proyecto `cedock1s-projects/app`).
 Las 6 variables se cargaron por stdin sin exponer valores; `SUPABASE_SERVICE_ROLE_KEY` quedó solo de
 servidor y `CMI_PRUEBAS_HABILITADO=false`.
 > **`/embudo/transcripciones` NO funciona en Vercel:** lee la carpeta de audios del disco local con
@@ -2209,6 +2222,61 @@ resolución de paso.
 
 ---
 
+### 17/19-ago · Producción se puso al día, el mapa dejó de ser un rectángulo gris
+
+**1 · La URL de producción del 14-ago estaba mal anotada.** `app-1ql3n8sq0-cedock1s-projects.vercel.app`
+**no abre**: devuelve 302 al SSO de Vercel, o sea que pide cuenta de Vercel antes de mostrar nada. Lo
+mismo `app-cedock1s-projects.vercel.app`. **El único alias público es `https://app-ten-chi-37.vercel.app`**
+— es el que hay que compartir. Se descubrió con `vercel inspect`, que lista los alias del despliegue.
+
+**2 · Producción estaba 4 días atrás.** Corría el build del 13-ago 20:11 y le faltaban **1.298 líneas de
+`app/`**: la página `/trabajo` ENTERA (no existía en la web), `/api/cmi/trabajo`, `ambito.ts`, el marcado
+con constancia y documento, el mapa a escala del 15-ago y la grafía J↔H de `geo.ts`. Lo más grave era
+`/trabajo`: la pantalla que destraba la adopción, invisible desde la URL pública. Ya está desplegado.
+
+> **La base sí estaba al día**: `usuario_ambito` y `v_constancia_sin_documento` existían en `cmi`, así que
+> las migraciones 0017 y 0018 ya estaban aplicadas. Solo faltaba publicar el build.
+
+**3 · «Sin dueño» son 73, no 71** (7 de ellas ya vencidas). El pendiente 5c de más abajo tenía la cifra
+vieja. Se ve en `/trabajo` con el usuario de César: a mi cargo 361 · acompaño 0 · sin dueño 73.
+
+**4 · El mapa de Territorio ahora muestra el territorio** (D57). Teselas de CARTO Positron dentro del
+mismo SVG, proyección pasada a Web Mercator, Zongo con su propio mapa en el recuadro, tema oscuro
+contemplado (`dark_all`) y atribución a OpenStreetMap y CARTO. Sin librería, sin dependencia npm nueva y
+sin clave de API. Verificado: los puntos calzan con la mancha urbana y al enfocar Mallasa el zoom sube
+solo y la barra de escala pasa de 5 km a 1 km.
+
+> ⚠️ **Trampa de CSS que costó dos intentos:** para marcar las calles se probó `filter: contrast(1.18)` y
+> **borró media ciudad**. `contrast()` pivota sobre el gris medio, y Positron es casi todo claro, así que
+> empuja las calles HACIA el blanco. Hay que **bajar el brillo primero**: quedó en
+> `brightness(.94) contrast(1.1)`.
+
+**5 · Los audios, al 19-ago.** Se cruzó la carpeta contra lo cargado, y las tres capas están alineadas:
+
+| Capa | Estado |
+|---|---|
+| Carpeta `Audios Inspecciones` | **66 medios, los 66 con su `.txt`** — ninguno sin transcribir |
+| Compilación | **al día: 68 transcripciones**, ninguna falta (`compilar_transcripciones.py --revisar`) |
+| Cargado en el CMI | las 5 inspecciones del 10 al 13-ago **ya existían** (`registrar_inspecciones.py --revisar`: 0 altas, 42 ya existían) |
+
+**El último evento procesado es el del 13-ago** (inspección Poeta / avenida del Poeta, C378–C386). En la
+carpeta **no hay ningún archivo posterior al 13-ago**.
+
+**Faltan cuatro audios que César tiene fuera de esta máquina** (vistos en su captura del 19-ago) y que hay
+que transcribir:
+
+| Archivo | Duración | Nota |
+|---|---|---|
+| `15-08 Reunión Sáb…` | **10:28:15** | diez horas y media: es, por lejos, el más largo de todo el acervo |
+| `17-08 Día de la Ban…` | — | |
+| `17-08 Inspección J…` | — | |
+| `17-08 Reunión con La Paz…` | — | 122 MB |
+
+> Para entrar al circuito tienen que **copiarse a `~/Documents/gamlp-dashboards/Audios Inspecciones`**: es
+> la carpeta que lee `/embudo/transcripciones` y contra la que corren el compilador y el registrador.
+
+---
+
 ## Pendiente inmediato
 
 > **Al 14-ago las cifras de este bloque están viejas.** Son **434 compromisos**, no 343. El estado
@@ -2265,7 +2333,7 @@ las 43 tareas nuevas llevan escrito `modelo: (leído en conversación, sin API)`
    está en la línea 20.
 5b. **Avisarle a Willam que su correo cambió** a `willam@gamlp.com` (14-ago). La contraseña es la
    misma; el correo viejo con dos «l» ya no entra.
-5c. **Las 71 tareas sin responsable** (bloque «Sin dueño» de `/trabajo`). No le aparecen a nadie
+5c. ~~Las 71 tareas sin responsable~~ → **son 73 al 17-ago, 7 de ellas ya vencidas** (bloque «Sin dueño» de `/trabajo`). No le aparecen a nadie
    hasta que alguien les asigne unidad. Es lo que más limita la adopción de `/trabajo`: son el
    16% de las 434.
 5d. **Las 11 unidades que no cuelgan de DAM**, incluidas **dos CMAC con la misma sigla** (ids 134 y

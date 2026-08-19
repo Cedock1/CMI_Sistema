@@ -638,6 +638,35 @@ habría cambiado una capacidad por una comodidad.
 
 ---
 
+**D57 · El mapa de Territorio lleva fondo cartográfico real.** · **APROBADA por César (17-ago) ·
+APLICADA y en producción.**
+
+> Hasta el 17-ago el panel «Territorio» era un rectángulo gris con los puntos flotando encima. César lo
+> pidió con esas palabras: *«necesito visualizar el mapa, o sea el territorio, lo gris que sale debería
+> ser el mapa»*. **No había ninguna decisión previa que lo prohibiera**: el código decía «sin librería ni
+> tiles externos» y eso era una restricción técnica autoimpuesta —evitar claves de API—, no una decisión
+> tomada.
+
+**Qué se eligió.** Teselas de **CARTO Positron** (gris claro, hecho para llevar datos encima), pedidas por
+URL directa y pegadas como `<image>` dentro del mismo SVG. **Sin librería de mapas, sin dependencia npm
+nueva y sin clave de API**, así que la restricción original se respeta igual. Se descartaron el OSM
+estándar (compite con los círculos de color) y el relieve (poco detalle de calle para ubicar una tarea).
+
+**Lo que arrastró.** La proyección pasó de equirectangular corregida por coseno a **Web Mercator**. A esta
+escala las dos dan casi lo mismo, pero solo Mercator calza con las teselas: con la anterior los puntos
+habrían quedado corridos respecto de las calles, que es peor que no tener mapa. Mercator es conforme, así
+que sigue respetando la proporción del terreno —que es lo que la proyección anterior vino a arreglar.
+
+**Lo que se conserva.** Encuadre que sigue al macrodistrito elegido, recuadro aparte de Zongo (ahora con su
+propio mapa y su propio zoom), barra de escala que se recalcula sola, etiquetas sobre el centro de las
+tareas de cada macrodistrito. **Sigue sin haber fronteras dibujadas**: los límites de los macrodistritos
+no existen descargables (pendiente 5g) y el fondo no los aporta.
+
+**Riesgo declarado.** Las teselas se piden a un CDN externo. Si la red del GAMLP bloquea `cartocdn.com`,
+el mapa vuelve a verse como antes —lienzo liso con los puntos, sin romperse—. **Falta probarlo desde una
+máquina de la Alcaldía.** La atribución a OpenStreetMap y CARTO va en el borde del mapa: la exige la
+licencia, no es decorativa.
+
 ## Decisiones ABIERTAS (aún sin resolver — no asumir)
 
 - **Armar** (meta/indicador/actividades) los 6 proyectos paraguas + el nuevo "Alimentación Solidaria", y
