@@ -32,3 +32,6 @@ Thumbs.db
 # Se regeneran con los scripts; versionarlas solo confunde sobre cuál es la buena.
 *.tmp
 scratchpad/
+
+# Entregas a terceros: llevan transcripciones integras y planillas con nombres de personas.
+entregas/

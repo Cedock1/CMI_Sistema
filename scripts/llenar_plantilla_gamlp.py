@@ -40,12 +40,15 @@ import openpyxl
 
 RAIZ = Path(__file__).resolve().parent.parent
 SECRETOS = RAIZ / "secretos"
-DESCARGAS = Path.home() / "Downloads"
-PLANTILLA = DESCARGAS / "Plantilla_Carga_Inspecciones_GAMLP.xlsx"
-BASE = DESCARGAS / "GAMLP_Base_Activa_2026-09-17.xlsx"
-RRHH = DESCARGAS / "Consultor gamlp 07-09-2026.xlsx"
+# Los archivos del GAMLP salieron de Descargas el 17-sep. `entregas/` NO se versiona: la
+# plantilla llena lleva nombres de funcionarios y el .md, las transcripciones íntegras.
+ENTREGA = RAIZ / "entregas" / "2026-08 - Inspecciones GAMLP"
+PLANTILLA = ENTREGA / "01 - Entregables" / "Plantilla_Carga_Inspecciones_GAMLP.xlsx"
+BASE = ENTREGA / "02 - Fuentes" / "GAMLP_Base_Activa_2026-09-17.xlsx"
+RESPALDO = ENTREGA / "02 - Fuentes" / "Plantilla_Carga_Inspecciones_GAMLP_vacia.xlsx"
+# RRHH trae CI, celular y fecha de nacimiento: vive en `secretos/`, y de acá solo se lee el nombre.
+RRHH = SECRETOS / "fuentes" / "Consultor gamlp 07-09-2026.xlsx"
 EVENTOS = SECRETOS / "plantilla_agosto_eventos.json"
-RESPALDO = SECRETOS / "plantillas" / "Plantilla_Carga_Inspecciones_GAMLP_vacia.xlsx"
 ESTADO = "NO REPORTADA"   # decisión de César, 17-sep: nadie reportó avance todavía
 # Sin plazo en la propuesta: la Base Activa casi nunca deja FIN PREVISTO vacío (5 de 295) y sus
 # plazos típicos van de 2 semanas a 3 meses. Operativas → +30 días; compromisos → +90 días.

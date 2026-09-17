@@ -37,6 +37,7 @@ cómo levantar el servidor, arquitectura de acceso a datos (schema `cmi`, rutas 
 | `Plan_de_migracion_por_fases.md` | El **plan paso a paso** (Fases 0–6) para migrar de Notion al nuevo ecosistema. |
 | `Nomenclatura_ejes_canonica.md` | La **forma oficial de nombrar los ejes** (código canónico `EJE-01…EJE-10`, Eje X = DRICA). Resuelve el 9↔10. |
 | `Plantilla_armado_de_proyecto.md` | El **método para "armar" un proyecto** (meta, indicador, actividades, tareas) + un ejemplo completo. |
+| `Entrega_inspecciones_agosto_GAMLP.md` | La **entrega de agosto-2026 al sistema del GAMLP**: cómo se llenó la plantilla de carga (22 inspecciones · 195 tareas), el criterio de cada columna, qué revisar antes de cargar y cómo se regenera. |
 | `Mapa_de_encaje_resumen.md` | El **resumen del cruce** compromisos ↔ proyectos: cobertura, top proyectos, sueltos y paraguas. |
 
 ## 📊 Datos e insumos (para abrir en Excel/Sheets)
