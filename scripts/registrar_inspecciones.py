@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """
-Registra en el CMI los compromisos de las cinco inspecciones del 10 al 13-ago,
-leyendo las propuestas ya revisadas de `secretos/propuesta_*.json`.
+Registra en el CMI los compromisos de las inspecciones de agosto, leyendo las
+propuestas ya revisadas de `secretos/propuesta_*.json`: las cinco del 10 al 13-ago y
+la segunda tanda, del 15 al 19-ago.
 
-    python3 scripts/registrar_inspecciones.py --revisar   # qué haría, sin escribir
-    python3 scripts/registrar_inspecciones.py             # aplica
+    python3 scripts/registrar_inspecciones.py --revisar            # qué haría, sin escribir
+    python3 scripts/registrar_inspecciones.py                      # aplica todo
+    python3 scripts/registrar_inspecciones.py --solo 17ago,19ago   # solo esas propuestas
 
 POR QUÉ ASÍ
   El patrón del proyecto es: el modelo razona y deja el JSON, César lo revisa, y el
@@ -48,6 +50,24 @@ INSPECCIONES = [
      "Parque Urbano Central", "13-08-2026 inspeccion poeta.txt"),
 ]
 
+# Segunda tanda (15 al 31-ago), preparada el 17-sep con la base pausada. Estas propuestas
+# declaran proyecto, programa y fuente en su propio `_meta`, así que alcanza con listarlas.
+# Van en orden cronológico: un enriquecimiento del 17 puede apuntar por su título
+# (`titulo_propuesta`) a un alta del 15, y tiene que encontrarla ya creada.
+AGOSTO_15_AL_31 = [
+    "propuesta_15ago_sabado.json",
+    "propuesta_17ago_lapazlimpia.json",
+    "propuesta_17ago_bandera.json",
+    "propuesta_17ago_jardin.json",
+    "propuesta_18ago_casacebra.json",
+    "propuesta_19ago_villanueva.json",
+    "propuesta_28ago_chasquipampa.json",
+    "propuesta_29ago_sakachuru.json",
+    "propuesta_31ago_sat.json",
+    "propuesta_31ago_firmalpl.json",
+    "propuesta_31ago_emaverde.json",
+]
+
 EJE_POR_DEFECTO = "EJE-01"
 
 # `tarea_origen.usuario` es NOT NULL: el endpoint lo toma de la sesión; acá se declara
@@ -60,7 +80,7 @@ def semaforo(plazo: str | None) -> str:
     if not plazo:
         return "⚪"
     from datetime import date
-    d = (date.fromisoformat(plazo) - date(2026, 8, 13)).days
+    d = (date.fromisoformat(plazo) - date.today()).days
     return "🔴" if d < 0 else ("🟡" if d <= 30 else "🟢")
 
 
@@ -81,6 +101,15 @@ def sigla_de(cur, texto: str | None) -> str | None:
 
 def main() -> None:
     revisar = "--revisar" in sys.argv
+    solo = sys.argv[sys.argv.index("--solo") + 1].split(",") if "--solo" in sys.argv else None
+
+    tanda = list(INSPECCIONES)
+    for archivo in AGOSTO_15_AL_31:
+        ruta = RAIZ / "secretos" / archivo
+        m = json.loads(ruta.read_text(encoding="utf-8"))["_meta"] if ruta.exists() else {}
+        tanda.append((archivo, m.get("proyecto"), m.get("programa"), m.get("fuente")))
+    if solo:
+        tanda = [t for t in tanda if any(s in t[0] for s in solo)]
     con = conectar()
     cur = con.cursor()
 
@@ -89,13 +118,16 @@ def main() -> None:
     altas = enriquecidas = saltadas = 0
     resumen = []
 
-    for archivo, nombre_proy, nombre_prog, fuente in INSPECCIONES:
+    for archivo, nombre_proy, nombre_prog, fuente in tanda:
         ruta = RAIZ / "secretos" / archivo
         if not ruta.exists():
             print(f"  ! falta {archivo}")
             continue
         d = json.loads(ruta.read_text(encoding="utf-8"))
         ev = d["_meta"]
+        if not (nombre_proy and nombre_prog and fuente):
+            print(f"  ! {archivo}: el _meta no declara proyecto, programa o fuente")
+            continue
 
         cur.execute("select id, eje_codigo from cmi.programa where nombre = %s", (nombre_prog,))
         prog = cur.fetchone()
@@ -141,7 +173,7 @@ def main() -> None:
             codigo = f"C{n:03d}"
             plazo = it.get("plazo")
             eje = it.get("eje_sugerido") or eje_prog or EJE_POR_DEFECTO
-            sigla = sigla_de(cur, it.get("responsable_propuesto_texto"))
+            sigla = it.get("responsable_sigla") or sigla_de(cur, it.get("responsable_propuesto_texto"))
             cur.execute("select id from cmi.unidad where sigla = %s", (sigla,)) if sigla else None
             uid = cur.fetchone()[0] if sigla and cur.rowcount else None
 
@@ -151,10 +183,10 @@ def main() -> None:
                       (codigo, titulo, descripcion, antecedente, actividad_id, eje_codigo,
                        responsable_unidad_id, plazo, estado, semaforo, origen, lugar_captura,
                        fecha_inicio, linea_base)
-                    values (%s,%s,%s,%s,%s,%s,%s,%s,'Vigente',%s,'Territorio',%s,%s,%s)
+                    values (%s,%s,%s,%s,%s,%s,%s,%s,'Vigente',%s,%s,%s,%s,%s)
                     returning id
                 """, (codigo, titulo, it.get("descripcion"), it.get("antecedente"),
-                      actividad_id, eje, uid, plazo, semaforo(plazo),
+                      actividad_id, eje, uid, plazo, semaforo(plazo), ev.get("origen") or "Territorio",
                       ev["inspeccion"][:120], ev["fecha_evento"], it.get("linea_base")))
                 tarea_id = cur.fetchone()[0]
 
@@ -173,10 +205,19 @@ def main() -> None:
             altas += 1
 
         # Enriquecimientos: acumulan cita y dejan su renglón de origen
+        # El destino va por código; si la tarea no tenía código en el catálogo local
+        # (`titulo_existente`) o nace en esta misma tanda (`titulo_propuesta`), por título.
         for e in d.get("enriquecimientos", []):
-            cur.execute("select id, antecedente from cmi.tarea where codigo = %s", (e["codigo"],))
+            if e.get("codigo"):
+                cur.execute("select id, antecedente from cmi.tarea where codigo = %s", (e["codigo"],))
+            else:
+                cur.execute("select id, antecedente from cmi.tarea where titulo = %s",
+                            (e.get("titulo_existente") or e.get("titulo_propuesta"),))
             r = cur.fetchone()
             if not r:
+                destino = e.get("codigo") or e.get("titulo_existente") or e.get("titulo_propuesta")
+                nota = " (su alta se crea en esta misma corrida)" if e.get("titulo_propuesta") and revisar else ""
+                print(f"  ! enriquecimiento sin destino en {archivo}: {destino}{nota}")
                 continue
             tid, ant = r
             if ant and e["cita"][:60] in ant:

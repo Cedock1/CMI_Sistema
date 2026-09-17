@@ -84,12 +84,15 @@ def main() -> None:
     declarados = set(re.findall(r'\*\*Archivo fuente:\*\* `([^`]+)`', texto))
     ultimo_n = max(int(n) for n in re.findall(r'^## (\d+)\.', texto, re.M))
 
+    # Desde el 17-sep la carpeta está repartida por mes («05 - Mayo»…): se busca recursivo.
+    # La compilación sigue en la raíz y declara cada fuente por su nombre, sin la subcarpeta.
+    en_carpeta = {p.name: p for p in CARPETA.rglob('*.txt')}
     faltantes = sorted(
-        (p for p in CARPETA.glob('*.txt') if p.name not in declarados and p.name != COMP.name),
+        (p for n, p in en_carpeta.items() if n not in declarados and n != COMP.name),
         key=lambda p: (fecha_del_nombre(p.name) or datetime.date(2099, 1, 1), p.name.lower()),
     )
 
-    huerfanos = sorted(d for d in declarados if not (CARPETA / d).exists())
+    huerfanos = sorted(d for d in declarados if d not in en_carpeta)
     if huerfanos:
         print('Declarados en el .md que ya no están en la carpeta '
               '(el texto sigue adentro, no se pierde):')

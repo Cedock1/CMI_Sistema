@@ -73,9 +73,20 @@ export function fechaDelNombre(nombre: string): string | null {
 export async function leerSeguimiento(req?: Request) {
   const db = cmiAdmin(esquemaDe(req));
 
+  // Desde el 17-sep la carpeta está repartida por mes («05 - Mayo», «08 - Agosto»…), así
+  // que se lee recursiva. El cruce sigue siendo por nombre de archivo, sin la subcarpeta:
+  // `tarea_origen.fuente` guarda el nombre del .txt, y mover un archivo de carpeta no puede
+  // devolverlo a rojo. `ruta` guarda dónde está cada uno para poder medirlo.
+  const ruta = new Map<string, string>();
   let archivos: string[] = [];
   try {
-    archivos = await readdir(CARPETA);
+    const entradas = await readdir(CARPETA, { recursive: true });
+    for (const rel of entradas) {
+      const nombre = basename(rel);
+      if (nombre.startsWith('.') || !/\.(txt|wav|mp3|mp4|m4a)$/i.test(nombre)) continue;
+      ruta.set(nombre, join(CARPETA, rel));
+      archivos.push(nombre);
+    }
   } catch {
     return { carpeta: CARPETA, existe: false, filas: [] as Transcripcion[] };
   }
@@ -114,7 +125,7 @@ export async function leerSeguimiento(req?: Request) {
   const filas: Transcripcion[] = [];
   for (const archivo of textos) {
     const nombre = archivo.replace(/\.txt$/i, '');
-    const info = await stat(join(CARPETA, archivo));
+    const info = await stat(ruta.get(archivo)!);
     const kb = Math.round(info.size / 1024);
     const fecha = fechaDelNombre(nombre);
     const reg = porFuente.get(archivo);

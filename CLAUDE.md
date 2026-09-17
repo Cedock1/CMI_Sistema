@@ -2277,6 +2277,91 @@ que transcribir:
 
 ---
 
+### 17-sep · Agosto completo: carpeta por mes, 25 transcripciones y la plantilla de carga del GAMLP
+
+Pedido de César: registrar los compromisos de las inspecciones de agosto, traer lo que estaba en
+Descargas, ordenar la carpeta por mes y, al final, **llenar la plantilla de carga que usa el GAMLP**
+(«ya están usando otro sistema») más un `.md` con todas las transcripciones de agosto.
+
+> ⚠️ **La base de Supabase está PAUSADA** (o dada de baja): `lzljnlzredbnknpzjrxv.supabase.co` no
+> resuelve por DNS y el pooler responde `XX000 tenant/user not found`. Producción en Vercel sigue
+> respondiendo, pero sin base. César: *«déjalo así nomás»*. **Nada de esta sesión se escribió en la
+> base**: los compromisos quedaron como propuestas listas para `registrar_inspecciones.py`. Para
+> reactivarla: supabase.com → proyecto → *Restore project*.
+
+**1 · La carpeta, por mes.** `Audios Inspecciones/` quedó con `05 - Mayo` … `09 - Septiembre` y un
+`README.md` de índice; en la raíz solo la compilación y su `.bak`. `inspeccion tembladerani.txt` (sin
+fecha en el nombre) va a julio: su propuesta dice 23-jul. Para que nada se rompa:
+- `lib/cmi/transcripciones.ts` lee con `readdir(..., { recursive: true })` y **sigue cruzando por
+  nombre de archivo, sin la subcarpeta**: mover un `.txt` de carpeta no lo devuelve a rojo.
+  Renombrarlo, sí. Probado: 147 nombres, sin choques.
+- `compilar_transcripciones.py` busca con `rglob`; los huérfanos se calculan por nombre.
+- Ningún otro sistema lee esa carpeta (buscado en `gamlp-dashboards`, `despacho-dam`, `drica-sistema`).
+
+**2 · Lo que había y lo que llegó.** En Descargas no había audios de agosto: la carpeta `agosto` estaba
+vacía desde el 19-ago. Había **tres de septiembre** (Día del Peatón, Iza a la bandera, Sak'a Churu,
+bajados de MEGA), que se movieron a `09 - Septiembre` y se transcribieron. Después César bajó
+`agosto.zip` (7,2 GB, MEGA) con 18 archivos: **10 idénticos por CRC** a los que ya estaban, **2 copias
+ya descartadas el 13-ago** (el `2-06-2026 zongo` re-exportado y el fragmento de Cota Cota) y **6
+nuevos**: Casa de la Cebra (18), CS Chasquipampa (28), relleno Sak'a Churu (29), SAT, firma del
+contrato con La Paz Limpia y reunión con EMAVERDE (31). Se extrajeron solo los 6; el zip fue a la
+Papelera. Dos notas de voz «Wildwood Ave» de Descargas son **conversaciones personales**: no se tocaron.
+
+**Transcripción:** con el motor de `Transcriptor.app` (`~/Transcriptor`, faster-whisper `small`,
+español, VAD, beam 5, TXT de una frase por línea), sin la ventana, a ~5,5× tiempo real. Agosto:
+**25 transcripciones**. Compilación general: **82 secciones**.
+
+**3 · Las propuestas** (`secretos/propuesta_*.json`, razonadas en conversación, sin API). Nuevas:
+15-ago sábado (mesa del paro del aseo, 10 h 28 min; el Alcalde participa en un tramo), 17-ago
+Bandera, Jardín Botánico y La Paz Limpia, 18-ago Casa de la Cebra, 19-ago Villa Nueva Potosí,
+28-ago Chasquipampa, 29-ago Sak'a Churu, 31-ago SAT, firma y EMAVERDE. El cotejo se hizo contra un
+catálogo local (seed + propuestas aplicadas), porque la base no responde.
+- **Enriquecimientos entre propuestas del mismo mes**: `titulo_propuesta` apunta a un alta de otra
+  propuesta que todavía no tiene código; `titulo_existente`, a las 32 tareas que en el seed no tienen
+  código. `registrar_inspecciones.py` ya resuelve los dos por título y recorre la lista
+  `AGOSTO_15_AL_31` **en orden cronológico**, que es lo que permite encontrarlas.
+- **Dos veces el orden estaba invertido y se corrigió**: el complejo de bomberos y ambulancias nace el
+  18 (Casa de la Cebra), no el 19; y tres altas de la firma del 31 (administración del relleno,
+  capacidad de disposición, auditoría) nacen en la inspección del 29.
+
+**4 · La plantilla del GAMLP** (`scripts/llenar_plantilla_gamlp.py` + `secretos/plantilla_agosto_eventos.json`).
+Llena la hoja `CARGA` de `~/Downloads/Plantilla_Carga_Inspecciones_GAMLP.xlsx` desde las propuestas.
+Referencia de formato: `~/Downloads/GAMLP_Base_Activa_2026-09-17.xlsx` (71 inspecciones, 295 tareas,
+del 5-may al 28-jul: **agosto no estaba**). Resultado: **22 inspecciones (Nº 72–93) · 195 tareas
+(Nº 296–490)**, 130 compromisos y 65 instrucciones operativas, estado `NO REPORTADA` (decisión de
+César). Verificado leyéndolo de vuelta: 0 valores fuera de catálogo, 0 obligatorios vacíos.
+- MAYÚSCULAS sin tildes, `Nº TAREA` correlativo global, inicio = fecha del evento: como la Base.
+- Unidad y dependencia: sigla del MOF → nombre del catálogo. Si la Base pone una dependencia siempre
+  bajo la misma unidad, manda la Base (Educación: Cuidados y Derechos en la Base, Ciudad Inteligente
+  en el MOF).
+- **RESPONSABLE**: la persona que la Base ya asigna a esa dependencia; si no hay, el titular según
+  `Consultor gamlp 07-09-2026.xlsx` (solo el nombre). Los subalcaldes entran aparte: su puesto es
+  «SUB ALCALDE …». Economía Circular no tiene titular: figura la directora de Residuos Sólidos, con
+  observación.
+- **FIN PREVISTO**: 17 dictados por el Alcalde, 109 propuestos en las propuestas y **69 por omisión**
+  (+30 días operativas, +90 compromisos), porque las propuestas del 10 al 13-ago no traían plazo y la
+  Base casi nunca lo deja vacío (5 de 295).
+- 52 filas sin macrodistrito (ATM, eléctricos, Bandera y las cuatro reuniones del aseo/EMAVERDE): no
+  hay de dónde sacarlo. La Base tiene 15 así.
+- El desayuno del 4-ago no genera filas: solo enriqueció. Tampoco los enriquecimientos en general.
+
+**5 · El `.md` de entrega**: `~/Downloads/Transcripciones visitas agosto.md` (25 transcripciones,
+1,55 M caracteres), con `scripts/compilar_mes.py 08 <salida>`: mismo formato y mismas reglas de fecha
+y duplicados que la compilación general.
+
+**Queda abierto:**
+1. **Aplicar las propuestas cuando vuelva la base**: `python3 scripts/registrar_inspecciones.py
+   --revisar` y después sin `--revisar`. Las 5 del 10 al 13-ago ya existen y se saltean.
+2. **32 compromisos marcados `verificar`** en las propuestas nuevas, sobre todo por atribución: la
+   transcripción no distingue quién habla. Los que más pesan: la cafetería del Jardín (condicional),
+   la tasa de aseo (el 31 el Alcalde dice que no se toca), rayos X de Villa Nueva Potosí (19-sep dicho
+   en público; salud dice 24-sep) y el responsable del complejo de bomberos (UAE, por materia).
+3. **Septiembre**: 3 transcripciones listas en `09 - Septiembre`, sin propuesta todavía.
+4. Los 9 compromisos de las propuestas de Tembladerani y Zenobio López (escritas el 11-ago) siguen
+   sin constancia de haberse aplicado.
+
+---
+
 ## Pendiente inmediato
 
 > **Al 14-ago las cifras de este bloque están viejas.** Son **434 compromisos**, no 343. El estado
@@ -2401,7 +2486,8 @@ python3 -m venv /tmp/pgvenv && /tmp/pgvenv/bin/pip install pg8000
      `fuente` = **el nombre EXACTO del `.txt`**. La etiqueta de `/embudo/transcripciones` NO se
      pone a mano: se calcula desde ahí. Si la fuente no coincide carácter por carácter —o si
      alguien renombra el archivo después—, la transcripción sigue en rojo aunque sus compromisos
-     estén cargados. Los enriquecimientos también dejan su renglón: una transcripción que solo
+     estén cargados. **Desde el 17-sep la carpeta va por mes** (`08 - Agosto`…): el audio nuevo se
+     guarda en la subcarpeta de su mes; moverlo de carpeta no afecta el cruce. Los enriquecimientos también dejan su renglón: una transcripción que solo
      enriqueció (como el desayuno del 4-ago) queda verde igual.
   2. **Compilada** — el texto íntegro va a
      `gamlp-dashboards/Audios Inspecciones/Compilacion_Transcripciones_Inspecciones_GAMLP_2026.md`
