@@ -3,8 +3,13 @@
 Llena la hoja CARGA de `Plantilla_Carga_Inspecciones_GAMLP.xlsx` con los compromisos de un mes,
 a partir de las propuestas ya razonadas en `secretos/propuesta_*.json`.
 
-    python3 scripts/llenar_plantilla_gamlp.py --revisar   # muestra las filas, no escribe
-    python3 scripts/llenar_plantilla_gamlp.py             # escribe la plantilla (con respaldo)
+    python3 scripts/llenar_plantilla_gamlp.py --mes 09 --revisar   # muestra las filas, no escribe
+    python3 scripts/llenar_plantilla_gamlp.py --mes 09             # escribe la plantilla (con respaldo)
+
+  `--mes` elige el mes (08 = agosto, 09 = septiembre…). Cada mes tiene su carpeta en `entregas/`
+  y su `secretos/plantilla_<mes>_eventos.json`. La numeración sigue a la Base Activa Y a las
+  plantillas ya entregadas de los meses anteriores (septiembre arranca donde terminó agosto:
+  inspección 94, tarea 491), decisión de César del 25-sep.
 
 POR QUÉ EXISTE (César, 17-sep)
   El GAMLP carga las inspecciones en otro sistema, con una plantilla fija. La Base Activa que
@@ -42,13 +47,31 @@ RAIZ = Path(__file__).resolve().parent.parent
 SECRETOS = RAIZ / "secretos"
 # Los archivos del GAMLP salieron de Descargas el 17-sep. `entregas/` NO se versiona: la
 # plantilla llena lleva nombres de funcionarios y el .md, las transcripciones íntegras.
-ENTREGA = RAIZ / "entregas" / "2026-08 - Inspecciones GAMLP"
-PLANTILLA = ENTREGA / "01 - Entregables" / "Plantilla_Carga_Inspecciones_GAMLP.xlsx"
-BASE = ENTREGA / "02 - Fuentes" / "GAMLP_Base_Activa_2026-09-17.xlsx"
-RESPALDO = ENTREGA / "02 - Fuentes" / "Plantilla_Carga_Inspecciones_GAMLP_vacia.xlsx"
+MESES = {"08": "agosto", "09": "septiembre", "10": "octubre", "11": "noviembre", "12": "diciembre"}
+ENTREGAS = RAIZ / "entregas"
+# La Base Activa del 17-sep (hasta el 28-jul) es la referencia de formato y de numeración de todos
+# los meses; vive en la carpeta de agosto, que fue la primera entrega.
+BASE = ENTREGAS / "2026-08 - Inspecciones GAMLP" / "02 - Fuentes" / "GAMLP_Base_Activa_2026-09-17.xlsx"
+VACIA_ORIGINAL = ENTREGAS / "2026-08 - Inspecciones GAMLP" / "02 - Fuentes" / "Plantilla_Carga_Inspecciones_GAMLP_vacia.xlsx"
+
+
+def rutas_del_mes(mes: str):
+    """Carpeta de entrega, plantilla a escribir, plantilla vacía de respaldo y eventos del mes."""
+    entrega = ENTREGAS / f"2026-{mes} - Inspecciones GAMLP"
+    return dict(
+        entrega=entrega,
+        plantilla=entrega / "01 - Entregables" / "Plantilla_Carga_Inspecciones_GAMLP.xlsx",
+        respaldo=entrega / "02 - Fuentes" / "Plantilla_Carga_Inspecciones_GAMLP_vacia.xlsx",
+        eventos=SECRETOS / f"plantilla_{MESES[mes]}_eventos.json",
+    )
+
+
+def plantillas_anteriores(mes: str):
+    """Plantillas ya llenas de los meses previos: su numeración continúa en este mes."""
+    return sorted(p for p in ENTREGAS.glob("2026-*/01 - Entregables/Plantilla_Carga_Inspecciones_GAMLP.xlsx")
+                  if p.parts[-3][5:7] < mes)
 # RRHH trae CI, celular y fecha de nacimiento: vive en `secretos/`, y de acá solo se lee el nombre.
 RRHH = SECRETOS / "fuentes" / "Consultor gamlp 07-09-2026.xlsx"
-EVENTOS = SECRETOS / "plantilla_agosto_eventos.json"
 ESTADO = "NO REPORTADA"   # decisión de César, 17-sep: nadie reportó avance todavía
 # Sin plazo en la propuesta: la Base Activa casi nunca deja FIN PREVISTO vacío (5 de 295) y sus
 # plazos típicos van de 2 semanas a 3 meses. Operativas → +30 días; compromisos → +90 días.
@@ -113,8 +136,8 @@ def clave(t: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^A-Z0-9Ñ ]", " ", mayus(t))).strip()
 
 
-def catalogos():
-    wb = openpyxl.load_workbook(PLANTILLA)
+def catalogos(plantilla: Path):
+    wb = openpyxl.load_workbook(plantilla)
     filas = list(wb["CATALOGOS"].iter_rows(min_row=2, values_only=True))
     return {i: [f[i] for f in filas if f[i]] for i in range(4)}
 
@@ -249,14 +272,25 @@ def filas_del_mes(eventos: list, mapa: dict, cat: dict, n_insp: int, n_tarea: in
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--revisar", action="store_true", help="muestra las filas y no escribe")
+    ap.add_argument("--mes", default="08", choices=sorted(MESES), help="mes a llenar (08 = agosto)")
     args = ap.parse_args()
 
-    cat = catalogos()
+    r = rutas_del_mes(args.mes)
+    PLANTILLA, RESPALDO, EVENTOS = r["plantilla"], r["respaldo"], r["eventos"]
+    RESPALDO.parent.mkdir(parents=True, exist_ok=True)
+    if not RESPALDO.exists():
+        shutil.copy2(PLANTILLA if PLANTILLA.exists() else VACIA_ORIGINAL, RESPALDO)
+    cat = catalogos(RESPALDO)
     mapa = mapa_unidades(cat)
     cfg = json.loads(EVENTOS.read_text(encoding="utf-8"))
     base = list(openpyxl.load_workbook(BASE)["INSPECCIONES"].iter_rows(min_row=2, values_only=True))
     ultimo_insp = max(f[0] for f in base if isinstance(f[0], int))
     ultima_tarea = max(f[3] for f in base if isinstance(f[3], int))
+    for anterior in plantillas_anteriores(args.mes):
+        filas_ant = [f for f in openpyxl.load_workbook(anterior, read_only=True)["CARGA"].iter_rows(min_row=2, values_only=True) if f[0]]
+        ultimo_insp = max(ultimo_insp, max(f[0] for f in filas_ant))
+        ultima_tarea = max(ultima_tarea, max(f[3] for f in filas_ant))
+        print(f"  numeración continúa después de {anterior.parts[-3]}: inspección {ultimo_insp}, tarea {ultima_tarea}")
     filas, avisos = filas_del_mes(cfg["eventos"], mapa, cat, ultimo_insp, ultima_tarea)
 
     por_evento = collections.Counter((f[0], f[1], f[2]) for f in filas)
@@ -273,9 +307,7 @@ def main() -> None:
         print("\n--revisar: no se escribió nada.")
         return
 
-    RESPALDO.parent.mkdir(parents=True, exist_ok=True)
-    if not RESPALDO.exists():
-        shutil.copy2(PLANTILLA, RESPALDO)
+    PLANTILLA.parent.mkdir(parents=True, exist_ok=True)
     wb = openpyxl.load_workbook(RESPALDO)   # siempre desde la plantilla vacía: idempotente
     ws = wb["CARGA"]
     for i, fila in enumerate(filas, start=2):

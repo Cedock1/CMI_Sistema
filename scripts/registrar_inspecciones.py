@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Registra en el CMI los compromisos de las inspecciones de agosto, leyendo las
-propuestas ya revisadas de `secretos/propuesta_*.json`: las cinco del 10 al 13-ago y
-la segunda tanda, del 15 al 19-ago.
+Registra en el CMI los compromisos de las inspecciones, leyendo las propuestas ya
+revisadas de `secretos/propuesta_*.json`: las cinco del 10 al 13-ago, la segunda tanda de
+agosto (15 al 31) y todas las de septiembre (`propuesta_*sep_*.json`, en orden cronológico).
 
     python3 scripts/registrar_inspecciones.py --revisar            # qué haría, sin escribir
     python3 scripts/registrar_inspecciones.py                      # aplica todo
@@ -68,6 +68,16 @@ AGOSTO_15_AL_31 = [
     "propuesta_31ago_emaverde.json",
 ]
 
+# Septiembre (25-sep): las propuestas `propuesta_*sep_*.json` se toman todas, en orden cronológico
+# por `_meta.fecha_evento` (y por nombre si empatan), por la misma razón que agosto: un
+# enriquecimiento por `titulo_propuesta` tiene que encontrar creada el alta a la que apunta.
+def propuestas_de_septiembre() -> list[str]:
+    def clave(ruta):
+        m = json.loads(ruta.read_text(encoding="utf-8"))["_meta"]
+        return (m.get("fecha_evento", ""), ruta.name)
+    return [r.name for r in sorted((RAIZ / "secretos").glob("propuesta_*sep_*.json"), key=clave)]
+
+
 EJE_POR_DEFECTO = "EJE-01"
 
 # `tarea_origen.usuario` es NOT NULL: el endpoint lo toma de la sesión; acá se declara
@@ -104,7 +114,7 @@ def main() -> None:
     solo = sys.argv[sys.argv.index("--solo") + 1].split(",") if "--solo" in sys.argv else None
 
     tanda = list(INSPECCIONES)
-    for archivo in AGOSTO_15_AL_31:
+    for archivo in AGOSTO_15_AL_31 + propuestas_de_septiembre():
         ruta = RAIZ / "secretos" / archivo
         m = json.loads(ruta.read_text(encoding="utf-8"))["_meta"] if ruta.exists() else {}
         tanda.append((archivo, m.get("proyecto"), m.get("programa"), m.get("fuente")))
