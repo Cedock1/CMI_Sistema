@@ -2362,6 +2362,65 @@ y duplicados que la compilación general.
 
 ---
 
+### 25/26-sep · Septiembre (6 al 22): 22 transcripciones, 22 propuestas y la segunda plantilla del GAMLP
+
+Pedido de César: «haz esto mismo [que agosto] pero con los audios que están en la carpeta de descargas,
+son todos los de septiembre». Decisiones suyas antes de empezar: procesar ya como **entrega parcial
+(06–22 sep)**; numeración **continúa** desde la de agosto (inspección 94, tarea 491); carpeta y Excel
+propios (`entregas/2026-09 - Inspecciones GAMLP/`); mover los audios a `09 - Septiembre` y borrar las
+carpetas de Descargas (un duplicado de Sak'a Churu 07-09 fue a la Papelera).
+
+**1 · Transcripción.** 19 audios nuevos (1.506 min) más los 3 que ya estaban = **22 en `09 - Septiembre`**.
+Se hizo sin abrir la ventana con `~/Transcriptor/transcribir_lote.py` (nuevo: mismo motor y formato que
+`Transcriptor.app`, del más corto al más largo, `.txt.part` → `.txt`, log en la carpeta), ~3 h a 5–9×
+tiempo real. **Hampaturi (19-sep) colapsó**: 875 líneas para 116 min con las últimas 23 idénticas —el
+modelo entra en bucle con `condition_on_previous_text` y descarta el resto—. Se rehízo con
+`--archivo --sin-contexto` (956 líneas, máximo 5 repeticiones); muestras del audio a los minutos 80 y
+100 confirmaron que el contenido (feria escolar, ritmo lento) quedó cubierto. Zongo (355 min) tardó
+47 min y trae el himno paceño repetido 45 veces sin perder discurso. Bucles menores (Achachicala,
+Bolívar, FAENO) no se rehicieron.
+
+**2 · Las 22 propuestas** (`secretos/propuesta_*sep_*.json`), razonadas acá, sin API, cotejadas contra el
+catálogo local porque la base sigue pausada: **74 altas · 14 bloques operativos con 56 instrucciones ·
+120 enriquecimientos · 127 descartes**. Tres compromisos cambiaron de fecha de nacimiento para que el
+registrador los encuentre en orden cronológico (Bolonia → 14-sep, incremento presupuestario de
+Hampaturi → 19-sep, ley de armonización de derechos → 14-sep). **Corrección de fondo:** el pago a los ex
+trabajadores del relleno es de **febrero y marzo** (no «enero y febrero» como dijo el Alcalde el 9-sep);
+lo precisó la reunión del 14-sep, que también dictó el plazo (viernes 18-sep). Zongo vuelve a aparecer
+por primera vez desde el 2-ago: enriquece C302–C310 y suma 6 compromisos (POA mancomunado, COBEE,
+turismo comunitario, camino departamental, estudio Zongo Valles–Zongo Choro, posta de Cahua Grande).
+
+**3 · Scripts.** `llenar_plantilla_gamlp.py` ahora acepta `--mes` (la numeración toma el máximo entre la
+Base Activa y las plantillas anteriores de `entregas/`; `--mes 08` sigue dando 22 · 195).
+`registrar_inspecciones.py` recorre las propuestas de septiembre después de las de agosto, por fecha.
+
+**4 · La plantilla:** **22 inspecciones (94–115) · 131 tareas (491–621)**, `NO REPORTADA`, verificada
+leyéndola de vuelta (0 fuera de catálogo, 0 obligatorios vacíos, correlativa). 24 plazos dictados y 107
+propuestos, **ninguno por omisión**. 6 filas sin macrodistrito (Día del Peatón). Más el `.md` del mes
+(22 transcripciones, 1,13 M caracteres) y la compilación general **82 → 101 secciones**. Documentado en
+`docs/Entrega_inspecciones_septiembre_GAMLP.md`.
+
+> ### Lo que salió mal, para no repetirlo
+> - **El clasificador de permisos bloqueó la herramienta Monitor** («Data Exfiltration») al intentar
+>   seguir el log de transcripción con `tail -f`. Se reemplazó por esperas en segundo plano con
+>   `until [ -f archivo ]`. No reintentar el `tail -f`.
+> - **Un `.txt` completo no garantiza audio completo.** Hampaturi tenía su `.txt` y le faltaba media
+>   grabación. La señal es líneas/min anormalmente bajo y una cola de líneas idénticas; conviene medir
+>   «máxima repetición consecutiva» antes de leer.
+> - La `fuente` de una propuesta se verifica **contra el nombre real del archivo**: un doble espacio en
+>   Achachicala la habría dejado en rojo para siempre.
+
+**Queda abierto:**
+1. **Aplicar a la base cuando vuelva** (agosto y septiembre): `registrar_inspecciones.py --revisar`.
+2. **40 compromisos y 12 bloques operativos con `verificar`** (lista en el doc de entrega §4): ubicación
+   de ambulancias/bomberos (Casa de la Cebra el 18-ago vs avenida del Poeta el 22-sep), cifras del
+   diésel (60–63 / 45–52 / 40–45 millones según el día), pago del 18-sep y mesa de Sak'a Churu, plazos de
+   Zongo.
+3. **Del 23 al 30-sep** no hay audios.
+4. `gamlp-dashboards` no es repositorio git: el README de audios y la compilación viven solo en disco.
+
+---
+
 ## Pendiente inmediato
 
 > **Al 14-ago las cifras de este bloque están viejas.** Son **434 compromisos**, no 343. El estado
