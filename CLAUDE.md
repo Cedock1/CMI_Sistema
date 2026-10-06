@@ -2482,6 +2482,19 @@ pendiente** (el pago de febrero y marzo a los 42 trabajadores sigue sin reporte)
 con la plantilla GAMLP: informe para el Alcalde y respaldo de datos para Javier, más un prompt de
 correcciones para Claude Design. Matos sugirió por chat separar las **obras menores** de los 52 sin
 línea: el informe propone sacar 12 a la cartera operativa y decidir línea para los 40 restantes.
+A pedido de César los reportes quedaron en dos versiones: `03 - Reportes/Versión conjunta/` (un
+informe y un respaldo para las dos presentaciones) y `Por presentación/` (cuatro documentos; el
+respaldo de inspecciones trae en anexo los 135 compromisos de septiembre).
+
+**Pendientes al cerrar (05-oct, 23:45):**
+1. Pegar `01 - Para Claude Design/PROMPT CORRECCIONES.md` en Claude Design y revisar las láminas
+   corregidas contra la auditoría.
+2. Exportar los Word a PDF desde Word: en esta Mac no hay Word ni LibreOffice. En los respaldos,
+   actualizar el índice.
+3. Preguntar a Matos qué son X1, X2, M1 y M2.
+4. Confirmar si los proyectos P051, P052, P054 y P057 son de EMAVERDE o del GAMLP.
+5. Conciliar las 14 líneas oficiales con las 21 de la migración 0015, y la cartera de 154 de la DGEG
+   con los 386 proyectos del CMI.
 
 ---
 
