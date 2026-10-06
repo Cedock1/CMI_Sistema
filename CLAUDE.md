@@ -2475,6 +2475,14 @@ de inspecciones: 626 tareas, 115 inspecciones, may–sep).
 modelo principal definió las láminas, escribió el prompt y recontó las cifras clave contra la fuente.
 Detalle en el `README.md` de la carpeta.
 
+**Después (05-oct, noche):** llegaron las presentaciones hechas en Claude Design. Una auditoría de
+Sonnet lámina por lámina encontró, entre otras cosas, que **13 de los 30 «vencidos» son fechas
+provisorias** (vencidos reales: 17) y que **Sak'a Churu figura como logro (37 contratos) y como
+pendiente** (el pago de febrero y marzo a los 42 trabajadores sigue sin reporte). Se armaron dos Word
+con la plantilla GAMLP: informe para el Alcalde y respaldo de datos para Javier, más un prompt de
+correcciones para Claude Design. Matos sugirió por chat separar las **obras menores** de los 52 sin
+línea: el informe propone sacar 12 a la cartera operativa y decidir línea para los 40 restantes.
+
 ---
 
 ## Pendiente inmediato
