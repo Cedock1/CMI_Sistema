@@ -2421,6 +2421,60 @@ propuestos, **ninguno por omisión**. 6 filas sin macrodistrito (Día del Peató
 
 ---
 
+### 04-oct · Reunión con César Matos (DGEG) sobre los sistemas del Despacho · `reuniones/`
+
+Pedido de César: transcribir la reunión del **02-oct** (dos audios DJI) y el reporte que se cita en ella
+(`REPORTE_INTEGRAL_TRABAJOS_GAMLP_2026.md`, de Descargas), sacar puntos y pendientes, ordenar todo y
+dictaminar si pertenece al CMI. Todo quedó en `reuniones/2026-10-02 - DGEG sistemas del Despacho/`
+(audios, transcripciones, reporte y `RESUMEN.md`). **`reuniones/` está fuera de git**: audio de 268 MB,
+nombres de personas y temas internos del Despacho. Los originales siguen en la tarjeta `NO NAME`.
+
+**Los dos audios son uno solo.** `…152606.WAV` dura 23 min 18 s y pesa 268.566.524 bytes, que es el
+tope de archivo de la grabadora: se cortó a las 15:49:24 y `…154924.WAV` (4,8 s) es la cola. En la
+tarjeta hay además «Copia de…» de los dos, idénticas por `cmp`. Transcripción local con
+`transcribir_lote.py` (4 min, 658 líneas, repetición máxima 3: sin bucles).
+
+**El dictamen: pertenece al CMI, aunque la reunión lo desborda.** Evidencia:
+- El reporte es de la **DGEG** (Javier Delgadillo, director; Franz, del mismo equipo): los usuarios del CMI.
+- Su §3 «Sistema de Seguimiento de Inspecciones» cita un corte de **93 inspecciones · 490 tareas**:
+  es exactamente donde terminó la entrega de agosto del CMI (septiembre siguió desde 94 · 491). Ese
+  sistema es el destino de las plantillas que arma el CMI.
+- Los proyectos estratégicos se clasifican con 5 criterios contra «los 10 [ejes], programas como 100,
+  y ahora las 14 líneas»: la misma estructura del CMI.
+- Lo que no es del CMI: Catastro, actividades económicas (recaudación con ATM y Catastro), agenda del
+  Alcalde, presentaciones para prensa y la incorporación de una persona al equipo.
+
+> ⚠️ **Dos carteras de proyectos estratégicos que se solapan.** El reporte (§4.7) evalúa **154
+> proyectos**; el CMI tiene **386** (85 armados). Conviene conciliarlas antes de que cada una crezca
+> por su lado.
+
+**Pendientes que tocan a César Mérida:** revisar el Excel de reportes mensuales y las Google Sheets
+«FAC» (San Antonio y Max Paredes primero) para estandarizar. El arranque coordinado es el **lun 05-oct**.
+La documentación pedida llegó (el reporte), pero no explica el flujo real de la información (fuentes,
+integraciones) ni trae hoja de ruta. Lista completa en el `RESUMEN.md`.
+
+### 05-oct · Dos presentaciones para el Despacho con datos de la DGEG · `reuniones/2026-10-05 - …`
+
+Reunión del 05-oct con César Matos (dos audios DJI, Whisper local). Para el 06-oct, presentadas por
+Javier y Franz: **(1) proyectos estratégicos por línea** (7 láminas) y **(2) inspecciones de
+septiembre** (portada + 2). Decisión de César: **no es pedido del Alcalde**, va en `reuniones/`
+(fuera de git). Se entrega como **prompt para Claude Design** más los archivos que hay que adjuntar
+(`01 - Para Claude Design/`), con el estilo del PDF modelo GAMLP.
+
+**Fuentes nuevas de la DGEG:** `INSTRUMENTO_PROYECTOS_ESTRATEGICOS_ACTUALIZADO.csv` (154 proyectos con
+línea, fechas y la preclasificación de 5 criterios /15) y `Respaldo_GAMLP_2026-10-05.csv` (el sistema
+de inspecciones: 626 tareas, 115 inspecciones, may–sep).
+
+> ⚠️ **Dos listas de líneas estratégicas.** Matos trabaja con **14** (la del desayuno del 04-ago:
+> la 10 es «La Paz sin trancaderas»); el CMI tiene **21** en la migración 0015 (la LE-10 es «Juventud
+> con Propósito»). Y su cartera de 154 se solapa con los 386 proyectos del CMI. Conciliar las dos.
+
+**Delegación por modelo** (pedido de César): Haiku buscó las 14 líneas; Sonnet procesó cada CSV; el
+modelo principal definió las láminas, escribió el prompt y recontó las cifras clave contra la fuente.
+Detalle en el `README.md` de la carpeta.
+
+---
+
 ## Pendiente inmediato
 
 > **Al 14-ago las cifras de este bloque están viejas.** Son **434 compromisos**, no 343. El estado
