@@ -39,6 +39,7 @@ cómo levantar el servidor, arquitectura de acceso a datos (schema `cmi`, rutas 
 | `Plantilla_armado_de_proyecto.md` | El **método para "armar" un proyecto** (meta, indicador, actividades, tareas) + un ejemplo completo. |
 | `Entrega_inspecciones_agosto_GAMLP.md` | La **entrega de agosto-2026 al sistema del GAMLP**: cómo se llenó la plantilla de carga (22 inspecciones · 195 tareas), el criterio de cada columna, qué revisar antes de cargar y cómo se regenera. |
 | `Entrega_inspecciones_septiembre_GAMLP.md` | La **entrega parcial de septiembre-2026 (6 al 22-sep)**: 22 inspecciones · 131 tareas, numeración continuada desde agosto, qué cambió de fecha de nacimiento, qué revisar y cómo se regenera con `--mes 09`. |
+| `../reuniones/` (fuera de git) | **Reuniones grabadas con el equipo del Despacho**, una carpeta por reunión con audios, transcripciones, fuentes y `RESUMEN.md` (puntos, pendientes, dictamen). La primera: 02-oct con César Matos (DGEG). El registro versionado está en `CLAUDE.md`. |
 | `Mapa_de_encaje_resumen.md` | El **resumen del cruce** compromisos ↔ proyectos: cobertura, top proyectos, sueltos y paraguas. |
 
 ## 📊 Datos e insumos (para abrir en Excel/Sheets)

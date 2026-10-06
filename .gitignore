@@ -35,3 +35,7 @@ scratchpad/
 
 # Entregas a terceros: llevan transcripciones integras y planillas con nombres de personas.
 entregas/
+
+# Reuniones grabadas: audio (cientos de MB), transcripciones con nombres de personas y temas
+# internos del Despacho. Solo el registro de hallazgos y pendientes va al CLAUDE.md.
+reuniones/
