@@ -2465,9 +2465,11 @@ septiembre** (portada + 2). Decisión de César: **no es pedido del Alcalde**, v
 línea, fechas y la preclasificación de 5 criterios /15) y `Respaldo_GAMLP_2026-10-05.csv` (el sistema
 de inspecciones: 626 tareas, 115 inspecciones, may–sep).
 
-> ⚠️ **Dos listas de líneas estratégicas.** Matos trabaja con **14** (la del desayuno del 04-ago:
-> la 10 es «La Paz sin trancaderas»); el CMI tiene **21** en la migración 0015 (la LE-10 es «Juventud
-> con Propósito»). Y su cartera de 154 se solapa con los 386 proyectos del CMI. Conciliar las dos.
+> ⚠️ **Dos listas de líneas estratégicas.** Matos trabaja con **14** (lista oficial en
+> `14 LINEAS ESTRATEGICAS.pdf`: la 10 es **«La Paz sin tragaderas»**, drenaje y renovación de redes;
+> la transcripción Whisper del desayuno del 04-ago la escribe mal, «trancaderas»); el CMI tiene **21**
+> en la migración 0015 (la LE-10 es «Juventud con Propósito», que en la lista de 14 es la descripción
+> de la línea 11). Y su cartera de 154 se solapa con los 386 proyectos del CMI. Conciliar las dos.
 
 **Delegación por modelo** (pedido de César): Haiku buscó las 14 líneas; Sonnet procesó cada CSV; el
 modelo principal definió las láminas, escribió el prompt y recontó las cifras clave contra la fuente.
