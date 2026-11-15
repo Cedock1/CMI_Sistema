@@ -3,6 +3,10 @@
 Arma un .md con TODAS las transcripciones de un mes de `Audios Inspecciones`, íntegras.
 
     python3 scripts/compilar_mes.py 08 "~/Downloads/Transcripciones visitas agosto.md"
+    python3 scripts/compilar_mes.py 10 "<salida>.md" --desde 2026-09-23
+
+`--desde` suma las transcripciones de otros meses con fecha desde ese día (octubre lleva los
+cuatro eventos del 25-sep, decisión de César del 15-nov: una sola entrega del 25-sep al 30-oct).
 
 Pedido de César (17-sep): un solo archivo con las transcripciones de las visitas de agosto,
 para entregar junto con la plantilla de carga del GAMLP. Usa el mismo formato que la
@@ -38,8 +42,14 @@ def duracion(txt: pathlib.Path) -> str:
 def main() -> None:
     mes = int(sys.argv[1])
     salida = pathlib.Path(sys.argv[2]).expanduser()
+    desde = datetime.date.fromisoformat(sys.argv[sys.argv.index("--desde") + 1]) if "--desde" in sys.argv else None
     carpeta = next(p for p in CARPETA.iterdir() if p.is_dir() and p.name.startswith(f"{mes:02d} - "))
-    txts = sorted(carpeta.glob("*.txt"), key=lambda p: (fecha_del_nombre(p.name) or datetime.date(2099, 1, 1), p.name.lower()))
+    txts = list(carpeta.glob("*.txt"))
+    if desde:
+        for otra in CARPETA.iterdir():
+            if otra.is_dir() and otra != carpeta and otra.name[:2].isdigit() and int(otra.name[:2]) < mes:
+                txts += [p for p in otra.glob("*.txt") if (fecha_del_nombre(p.name) or datetime.date(1900, 1, 1)) >= desde]
+    txts = sorted(txts, key=lambda p: (fecha_del_nombre(p.name) or datetime.date(2099, 1, 1), p.name.lower()))
 
     filas, secciones, total = [], [], 0
     for i, p in enumerate(txts, start=1):
@@ -64,7 +74,9 @@ def main() -> None:
 
     hoy = datetime.date.today()
     cabecera = (
-        f"# Transcripciones de visitas — {MESES[mes - 1]} de 2026\n\n"
+        (f"# Transcripciones de visitas — {MESES[mes - 1]} de 2026\n\n" if not desde else
+         f"# Transcripciones de visitas — del {desde.day} de {MESES[desde.month - 1]} al cierre de "
+         f"{MESES[mes - 1]} de 2026\n\n")
         f"**{len(txts)} transcripciones** · texto íntegro y sin resumir · "
         f"generado el {hoy.day} de {MESES[hoy.month - 1]} de {hoy.year}\n\n"
         "> Transcripción automática (Whisper local, sin diarización): no distingue quién habla y trae "

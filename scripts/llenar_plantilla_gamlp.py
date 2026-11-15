@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import collections
+import csv
 import datetime
 import json
 import re
@@ -142,8 +143,26 @@ def catalogos(plantilla: Path):
     return {i: [f[i] for f in filas if f[i]] for i in range(4)}
 
 
-def mapa_unidades(cat) -> dict:
+def filas_de_referencia(base_sistema: Path | None):
+    """Filas (unidad, dependencia, responsable) que dicen cómo carga el GAMLP.
+
+    Sin `base_sistema`: la Base Activa del 17-sep (mayo a julio), como en agosto y septiembre.
+    Con `base_sistema` (octubre en adelante): el respaldo CSV del sistema de la DGEG, que trae
+    TODAS las tareas cargadas, incluidas las de agosto y septiembre tal como la DGEG las dejó.
+    Al cargar septiembre la DGEG cambió el responsable en 22 de 131 filas y la unidad en 39
+    (p. ej. las direcciones del Despacho pasaron a ser su propia unidad): manda lo que el
+    sistema tiene hoy, no lo que propusimos.
+    """
+    if base_sistema:
+        with open(base_sistema, encoding="utf-8-sig") as f:
+            return [(r["unidad_organizacional"], r["dependencia"], r["responsable"]) for r in csv.DictReader(f)]
+    base = openpyxl.load_workbook(BASE)["INSPECCIONES"].iter_rows(min_row=2, values_only=True)
+    return [(f[6], f[8], f[7]) for f in base]
+
+
+def mapa_unidades(cat, base_sistema: Path | None = None, rrhh: Path = None, corte: str = "2026-09-07") -> dict:
     """Sigla del MOF → (unidad, dependencia, responsable) en el vocabulario de la plantilla."""
+    rrhh = rrhh or RRHH
     sql = (RAIZ / "seed/0002_seed_referencia.sql").read_text(encoding="utf-8")
     mof = {m[1]: dict(nombre=m[2], secretaria=m[3]) for m in re.finditer(
         r"insert into unidad \(id, sigla, nombre, nivel, secretaria[^)]*\) values "
@@ -162,16 +181,19 @@ def mapa_unidades(cat) -> dict:
         prefijo = [d for d in deps if clave(k) and clave(d).startswith(clave(k)[:25])]
         return prefijo[0] if prefijo else None
 
-    base = list(openpyxl.load_workbook(BASE)["INSPECCIONES"].iter_rows(min_row=2, values_only=True))
     resp_dep = collections.defaultdict(collections.Counter)
     uni_dep = collections.defaultdict(collections.Counter)
-    for f in base:
-        if f[8] and f[7] and "\n" not in f[7]:
-            resp_dep[f[8]][f[7]] += 1
-            uni_dep[f[8]][f[6]] += 1
+    for uni_b, dep_b, resp_b in filas_de_referencia(base_sistema):
+        if dep_b and resp_b and "\n" not in resp_b:
+            resp_dep[dep_b][resp_b] += 1
+        if dep_b and uni_b:
+            uni_dep[dep_b][uni_b] += 1
+    # Unidades que el sistema de la DGEG ya usa aunque la hoja CATALOGOS de la plantilla vacía
+    # (17-sep) no las tenga: las direcciones del Despacho cargadas como unidad propia.
+    unidades_sistema = {u for c in uni_dep.values() for u in c} if base_sistema else set()
 
     titular = {}
-    ws = openpyxl.load_workbook(RRHH, read_only=True).worksheets[0]
+    ws = openpyxl.load_workbook(rrhh, read_only=True).worksheets[0]
     it = ws.iter_rows(values_only=True)
     ix = {k: i for i, k in enumerate(next(it))}
     patron = re.compile(r"^(JEFE DE UNIDAD|JEFA DE UNIDAD|JEFE DE LABORATORIO|DIRECTOR|DIRECTORA|SECRETARIO|"
@@ -179,7 +201,7 @@ def mapa_unidades(cat) -> dict:
     for r in it:
         puesto = mayus(r[ix["puesto"]])
         fin = r[ix["fecha_fin"]]
-        if (fin and str(fin)[:10] < "2026-09-07") or not patron.match(puesto) or puesto == "SECRETARIA":
+        if (fin and str(fin)[:10] < corte) or not patron.match(puesto) or puesto == "SECRETARIA":
             continue
         titular.setdefault(r[ix["sigla"]], mayus(" ".join(
             str(x) for x in (r[ix["nombres"]], r[ix["primer_apellido"]], r[ix["segundo_apellido"]]) if x)))
@@ -194,12 +216,18 @@ def mapa_unidades(cat) -> dict:
         # en la Base y bajo Ciudad Inteligente en el MOF.
         if dep in uni_dep and len(uni_dep[dep]) == 1 and sum(uni_dep[dep].values()) >= 2:
             uni = next(iter(uni_dep[dep]))
-        if uni not in unidades:
+        if uni not in unidades and uni not in unidades_sistema:
             uni = uni_dep[dep].most_common(1)[0][0] if dep in uni_dep else None
         if sigla in MANUAL:
             uni, dep = MANUAL[sigla]
         if not uni and u["secretaria"] in ("DAM", "SEMGE"):
             uni = "SEM GESTION EFICIENTE"
+        # Con el sistema de la DGEG como referencia, su unidad manda también sobre MANUAL cuando
+        # la dependencia va casi siempre bajo la misma (≥ 2 filas y ≥ 75 %).
+        if base_sistema and dep in uni_dep:
+            top, n = uni_dep[dep].most_common(1)[0]
+            if n >= 2 and n / sum(uni_dep[dep].values()) >= 0.75:
+                uni = top
         resp = (resp_dep[dep].most_common(1)[0][0] if dep in resp_dep
                 else titular.get(sigla) or SUBALCALDES.get(sigla))
         out[sigla] = dict(unidad=uni, dependencia=dep, responsable=resp)
@@ -222,7 +250,8 @@ def sigla_de(item: dict, padre: dict | None = None) -> str | None:
     return sigla_de(padre) if padre else None
 
 
-def filas_del_mes(eventos: list, mapa: dict, cat: dict, n_insp: int, n_tarea: int):
+def filas_del_mes(eventos: list, mapa: dict, cat: dict, n_insp: int, n_tarea: int,
+                  unidades_sistema: set = frozenset()):
     filas, avisos, por_omision = [], [], []
     for ev in eventos:
         d = json.loads((SECRETOS / ev["propuesta"]).read_text(encoding="utf-8"))
@@ -260,7 +289,8 @@ def filas_del_mes(eventos: list, mapa: dict, cat: dict, n_insp: int, n_tarea: in
             elif not responsable:
                 avisos.append(f"sin responsable ({sigla} · {u['dependencia']}): {it['titulo'][:60]}")
             if fila[6] and fila[6] not in cat[0]:
-                avisos.append(f"unidad fuera de catálogo: {fila[6]}")
+                avisos.append(f"unidad que usa el sistema de la DGEG y no está en CATALOGOS: {fila[6]}"
+                              if fila[6] in unidades_sistema else f"unidad fuera de catálogo: {fila[6]}")
             if fila[8] and fila[8] not in cat[3]:
                 avisos.append(f"dependencia fuera de catálogo: {fila[8]}")
             filas.append(fila)
@@ -281,8 +311,14 @@ def main() -> None:
     if not RESPALDO.exists():
         shutil.copy2(PLANTILLA if PLANTILLA.exists() else VACIA_ORIGINAL, RESPALDO)
     cat = catalogos(RESPALDO)
-    mapa = mapa_unidades(cat)
     cfg = json.loads(EVENTOS.read_text(encoding="utf-8"))
+    # Desde octubre (decisión de César, 15-nov): la referencia de unidades y responsables es el
+    # respaldo del sistema de la DGEG, el RRHH es el más reciente y la numeración sigue al sistema.
+    fuentes = r["entrega"] / "02 - Fuentes"
+    base_sistema = fuentes / cfg["base_sistema"] if cfg.get("base_sistema") else None
+    rrhh = SECRETOS / "fuentes" / cfg["rrhh"] if cfg.get("rrhh") else RRHH
+    mapa = mapa_unidades(cat, base_sistema, rrhh, cfg.get("rrhh_corte", "2026-09-07"))
+    unidades_sistema = {f[0] for f in filas_de_referencia(base_sistema) if f[0]} if base_sistema else set()
     base = list(openpyxl.load_workbook(BASE)["INSPECCIONES"].iter_rows(min_row=2, values_only=True))
     ultimo_insp = max(f[0] for f in base if isinstance(f[0], int))
     ultima_tarea = max(f[3] for f in base if isinstance(f[3], int))
@@ -291,7 +327,12 @@ def main() -> None:
         ultimo_insp = max(ultimo_insp, max(f[0] for f in filas_ant))
         ultima_tarea = max(ultima_tarea, max(f[3] for f in filas_ant))
         print(f"  numeración continúa después de {anterior.parts[-3]}: inspección {ultimo_insp}, tarea {ultima_tarea}")
-    filas, avisos = filas_del_mes(cfg["eventos"], mapa, cat, ultimo_insp, ultima_tarea)
+    ini = cfg.get("numeracion_inicial")
+    if ini:
+        ultimo_insp, ultima_tarea = max(ultimo_insp, ini["inspeccion"]), max(ultima_tarea, ini["tarea"])
+        print(f"  numeración continúa después de {ini.get('fuente', 'numeracion_inicial')}: "
+              f"inspección {ultimo_insp}, tarea {ultima_tarea}")
+    filas, avisos = filas_del_mes(cfg["eventos"], mapa, cat, ultimo_insp, ultima_tarea, unidades_sistema)
 
     por_evento = collections.Counter((f[0], f[1], f[2]) for f in filas)
     for (n, fecha, ev), k in por_evento.items():
