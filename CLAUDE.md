@@ -2498,6 +2498,60 @@ respaldo de inspecciones trae en anexo los 135 compromisos de septiembre).
 
 ---
 
+### 15-nov · Octubre (13 al 30) + los 4 del 25-sep: 39 transcripciones y la tercera plantilla del GAMLP
+
+Pedido de César: transcribir los 39 audios y videos que pasó (35 de octubre, 4 del 25-sep), analizarlos y
+pasarlos a la matriz como en septiembre; transcripciones en la Mac, audios al disco externo. Decisiones suyas:
+**una sola entrega** con los 25-sep primero; numeración desde **116 · 627** (después del respaldo de la DGEG
+del 05-oct); entregables = plantilla + `.md` + documento. Todo en `docs/Entrega_inspecciones_octubre_GAMLP.md`.
+
+**1 · Transcripción: cambio de motor a mitad de camino.** `transcribir_lote.py` (faster-whisper `small`, CPU)
+iba a **1x tiempo real** con la Mac cargada (carga 21–27). Se escribió `~/Transcriptor/transcribir_mlx.py`:
+Whisper **large-v3-turbo en la GPU (MLX)**, **13x–40x** y con menos errores. Tres archivos quedaron con `small`.
+Después se le agregó el **detector de voz Silero** por defecto: seis actos con música salieron con texto
+inventado («Gracias.» x69, «¡Suscríbete al canal!»; la carta orgánica 67 % repetida) y se rehicieron.
+
+**2 · Las 39 propuestas**, escritas por subagentes Sonnet en 9 lotes paralelos con un brief común (sin API),
+revisadas acá: siglas contra el MOF, plazo en cada alta, cotejo contra las 626 tareas del sistema de la DGEG.
+**304 altas · 60 instrucciones · 166 enriquecimientos (105 tareas distintas) · 322 descartes.**
+
+**3 · El cruce entre lotes, que los lotes no podían hacer.** Cada lote cotejó contra el sistema pero no contra
+los demás. Cruzadas todas, **31 filas eran el mismo compromiso en otro evento** (la Expo 6-8 nov salía en cuatro;
+la compensación del diésel, en tres; la nueva terminal, en cinco). Queda la del evento donde nació y lo que el
+repetido sumó va a `OBSERVACION`. Los `omitir` viven en `secretos/plantilla_octubre_eventos.json`, que arma
+`secretos/armar_eventos_octubre.py` buscando cada título por fragmento y deteniéndose si no casa con uno solo.
+
+**4 · La plantilla: 36 inspecciones (116–151) · 333 tareas (627–959)**, `NO REPORTADA`, verificada leyéndola de
+vuelta (correlativa, 0 responsables vacíos, 0 plazos antes del inicio). 39 plazos dictados y 240 propuestos.
+Tres eventos sin filas (caminata, Bagó, y el Despacho del 25-oct, que solo anunció la Expo). Más el `.md`
+(39 transcripciones, 2,37 M caracteres) y la compilación general **101 → 140 secciones**.
+
+> ### Lo que salió mal, para no repetirlo
+> - **MLX sin límite de caché crece hasta 17 GB** y la Mac llegó a 46 GB de swap: el guardián de RAM pausó a
+>   los procesos que sobraban (estado `T`). El script ahora fija `mx.set_cache_limit` y limpia la caché entre
+>   archivos. **Un solo proceso pesado, en segundo plano y con stdin en `/dev/null`.**
+> - Al pausar con `pkill -STOP` por nombre se pausó `caffeinate` en vez de Python: pausar **por PID**.
+> - `python3 -I` esconde el site del usuario, y `mlx_whisper` vive ahí: el script se corre **sin `-I`**.
+> - **La regla del 75 % del sistema de la DGEG mandó Ciudad Productiva al «Centro Municipal de Faeno»**: el
+>   sistema solo tenía 4 filas con esa dependencia, todas del Faeno del 22-sep. Con pocas filas, la regla
+>   aprende el evento y no la estructura. Corregido con `unidad_por_sigla`. Mirar el reparto por unidad antes
+>   de escribir: así apareció.
+> - **El nombre del archivo no dice el evento:** `EVALUACIÓN FAENO` es la reunión con FENAENA (Alasita) y
+>   `REUNION ZONGO` es casi entera de Hampaturi. Manda el contenido.
+> - Lotes paralelos producen duplicados entre sí aunque cada uno coteje bien contra la base: **el cruce entre
+>   lotes es un paso propio**, después de que vuelvan todos.
+
+**Queda abierto:**
+1. **Pregunta a César:** 34 filas usan direcciones del Despacho como unidad (Jurídica, Gobernanza, DGEG,
+   Comunicación, Relaciones Internacionales), como el sistema de la DGEG, y esas unidades no están en
+   `CATALOGOS`. Si la carga valida contra el catálogo, van como `SEM GESTION EFICIENTE`.
+2. **193 compromisos con `verificar`** (doc de entrega §4) y **96 plazos ya vencidos** al 15-nov.
+3. **Borrar los 39 audios locales** (54,26 GB) cuando el disco Respaldo esté conectado: releer el SHA-256 contra
+   `audios.tsv`, borrar y pasar el estado de «copiado» a «movido».
+4. `registrar_inspecciones.py` no conoce octubre ni lee los `omitir` del archivo de eventos.
+
+---
+
 ## Pendiente inmediato
 
 > **Al 14-ago las cifras de este bloque están viejas.** Son **434 compromisos**, no 343. El estado
