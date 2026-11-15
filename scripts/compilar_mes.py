@@ -77,7 +77,7 @@ def main() -> None:
         (f"# Transcripciones de visitas — {MESES[mes - 1]} de 2026\n\n" if not desde else
          f"# Transcripciones de visitas — del {desde.day} de {MESES[desde.month - 1]} al cierre de "
          f"{MESES[mes - 1]} de 2026\n\n")
-        f"**{len(txts)} transcripciones** · texto íntegro y sin resumir · "
+        + f"**{len(txts)} transcripciones** · texto íntegro y sin resumir · "
         f"generado el {hoy.day} de {MESES[hoy.month - 1]} de {hoy.year}\n\n"
         "> Transcripción automática (Whisper local, sin diarización): no distingue quién habla y trae "
         "errores de reconocimiento. Toda cita que se use como respaldo debe contrastarse con el audio.\n\n"
