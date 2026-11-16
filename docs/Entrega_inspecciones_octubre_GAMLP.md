@@ -106,15 +106,16 @@ uno, está en `secretos/armar_eventos_octubre.py`.
 
 **Verificación hecha sobre el archivo escrito**, leyéndolo de vuelta: numeración 116–151 y 627–959
 correlativa; 0 responsables vacíos; 0 plazos anteriores al inicio; macrodistrito, estado y dependencia
-dentro del catálogo; unidad dentro del catálogo **salvo las 34 filas de §4.1**.
+dentro del catálogo; unidad dentro del catálogo **salvo las 34 filas de §4.1**, que siguen al sistema de la
+DGEG por decisión de César.
 
 ## 4 · Qué revisar antes de cargar
 
-1. **34 filas con una unidad que no está en `CATALOGOS`** (pregunta abierta a César). Son las direcciones del
-   Despacho que el sistema de la DGEG usa como unidad propia: Asuntos Jurídicos (11), Gobernanza del Territorio
-   (11), Gestión Estratégica y Gabinete (6), Comunicación (4) y Relaciones Internacionales (2). Si la carga
-   valida contra el catálogo, van como `SEM GESTION EFICIENTE` con la misma dependencia; se cambia con un ajuste
-   y se regenera.
+1. **34 filas con una unidad que no está en `CATALOGOS`.** Son las direcciones del Despacho que el sistema de la
+   DGEG usa como unidad propia: Asuntos Jurídicos (11), Gobernanza del Territorio (11), Gestión Estratégica y
+   Gabinete (6), Comunicación (4) y Relaciones Internacionales (2). **César decidió dejarlas como el sistema de la
+   DGEG** (15-nov, D58). Si la carga las rechaza por no estar en el catálogo, van como `SEM GESTION EFICIENTE` con
+   la misma dependencia: se cambia con un `unidad_por_sigla` en `armar_eventos_octubre.py` y se regenera.
 2. **193 de los 279 compromisos llevan `verificar`** en su propuesta (la transcripción no separa hablantes y
    muchos son «vamos a ver»). Los que más pesan:
    - **Ley de la Alasita** (FENAENA): el Alcalde la propone con «si les parece» y FENAENA no la acepta en el audio.

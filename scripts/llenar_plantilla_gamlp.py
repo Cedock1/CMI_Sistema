@@ -288,6 +288,8 @@ def filas_del_mes(eventos: list, mapa: dict, cat: dict, n_insp: int, n_tarea: in
                 avisos.append(f"sin dependencia ({sigla}): {it['titulo'][:70]}")
             elif not responsable:
                 avisos.append(f"sin responsable ({sigla} · {u['dependencia']}): {it['titulo'][:60]}")
+            # Las unidades que el sistema de la DGEG usa y CATALOGOS no tiene (direcciones del Despacho) se
+            # dejan como las usa el sistema: decisión de César del 15-nov (D58). El aviso es informativo.
             if fila[6] and fila[6] not in cat[0]:
                 avisos.append(f"unidad que usa el sistema de la DGEG y no está en CATALOGOS: {fila[6]}"
                               if fila[6] in unidades_sistema else f"unidad fuera de catálogo: {fila[6]}")

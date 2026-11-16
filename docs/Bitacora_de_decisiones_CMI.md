@@ -667,6 +667,19 @@ el mapa vuelve a verse como antes —lienzo liso con los puntos, sin romperse—
 máquina de la Alcaldía.** La atribución a OpenStreetMap y CARTO va en el borde del mapa: la exige la
 licencia, no es decorativa.
 
+**D58 · La plantilla de carga del GAMLP sigue al sistema de la DGEG, también fuera del catálogo.** ·
+**APROBADA por César (15-nov) · APLICADA en la entrega de octubre.**
+
+Desde octubre la referencia de unidades, responsables y numeración es el respaldo del sistema de la DGEG
+(`Respaldo_GAMLP_2026-10-05.csv`), no la Base Activa del 17-sep. Ese sistema carga las direcciones del
+Despacho como unidad propia (Asuntos Jurídicos, Gobernanza del Territorio, Gestión Estratégica y Gabinete,
+Comunicación, Relaciones Internacionales), y esas unidades **no están en la hoja `CATALOGOS`** de la
+plantilla. En octubre son 34 filas. César eligió entre dejarlas así o pasarlas a `SEM GESTION EFICIENTE`:
+**se dejan como el sistema de la DGEG**, para que lo nuevo se vea igual que lo que el sistema ya tiene.
+`llenar_plantilla_gamlp.py` las sigue avisando como «unidad que usa el sistema de la DGEG y no está en
+CATALOGOS»: es un aviso informativo, no un error. **Si la carga las rechaza**, el cambio es un
+`unidad_por_sigla` en el archivo de eventos del mes y se regenera.
+
 ## Decisiones ABIERTAS (aún sin resolver — no asumir)
 
 - **Armar** (meta/indicador/actividades) los 6 proyectos paraguas + el nuevo "Alimentación Solidaria", y

@@ -2542,9 +2542,9 @@ Tres eventos sin filas (caminata, Bagó, y el Despacho del 25-oct, que solo anun
 >   lotes es un paso propio**, después de que vuelvan todos.
 
 **Queda abierto:**
-1. **Pregunta a César:** 34 filas usan direcciones del Despacho como unidad (Jurídica, Gobernanza, DGEG,
-   Comunicación, Relaciones Internacionales), como el sistema de la DGEG, y esas unidades no están en
-   `CATALOGOS`. Si la carga valida contra el catálogo, van como `SEM GESTION EFICIENTE`.
+1. ~~Pregunta a César~~ → **resuelta (D58):** las 34 filas con direcciones del Despacho como unidad (Jurídica,
+   Gobernanza, DGEG, Comunicación, Relaciones Internacionales) **se dejan como el sistema de la DGEG**, aunque
+   no estén en `CATALOGOS`. Si la carga las rechaza, van como `SEM GESTION EFICIENTE` con un `unidad_por_sigla`.
 2. **193 compromisos con `verificar`** (doc de entrega §4) y **96 plazos ya vencidos** al 15-nov.
 3. **Borrar los 39 audios locales** (54,26 GB) cuando el disco Respaldo esté conectado: releer el SHA-256 contra
    `audios.tsv`, borrar y pasar el estado de «copiado» a «movido».
